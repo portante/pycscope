@@ -16,7 +16,7 @@ class TestParseSource(unittest.TestCase):
         src = ""
         pycscope.parseSource(src, self.buf)
         output = "".join(self.buf)
-        self.assertEqual(output, "")
+        self.assertEqual(output, "\n")
 
 
     def testEmptyLine(self,):
