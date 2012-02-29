@@ -1,0 +1,125 @@
+========
+PyCscope
+========
+
+:Copyright: Copyright 2006 Dean Hall.  See License_ for details.
+:Author: Dean Hall
+:Release: 0.3
+:Date: 2007/12/25
+
+
+Purpose
+-------
+
+A python script to generate a cscope index from a Python source
+tree.  `pycscope` uses Python's own parser and AST to generate
+the index, so it is a bit more accurate than plain cscope.
+
+
+Usage
+-----
+
+::
+
+    pycscope.py [-R] [-f reffile] [source files]
+    -R              Recurse directories for files.
+    -f reffile      Use reffile as cross-ref file name instead of cscope.out.
+    -i srclistfile  Use a file that contains a list of source files to scan.
+
+    
+License
+-------
+
+Copyright 2006 Dean Hall.
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of version 2 of the GNU General
+Public License as published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public
+License along with this program; if not, write to the Free
+Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+Boston, MA  02110-1301, USA
+
+
+Install
+-------
+
+PyCscope uses Python's distutils package for installation.
+Use the following command to install this package::
+
+    % python setup.py install
+
+    
+Features
+--------
+
+PyCscope has the following features:
+
+    - Command line interface
+    - Output can be used by the `CscopeFinder` plugin for jEdit
+    - Marks for all files ending in `.py`
+    - Marks for all `class` definitions
+    - Marks for all defined functions
+    - Marks for function calls (algorithm is not perfect)
+    - Marks for end-of-function (no search uses this mark yet)
+    - Marks for imported modules (use the search for #include)
+
+A *mark* is an indicator to the cscope utility that something
+of interest follows.
+
+
+Status
+------
+
+It works well enough to generate an index file that can be used
+by the `CscopeFinder` plugin for jEdit.  Other editors are not tested.
+
+
+Release Notes
+-------------
+
+This is PyCscope release 0.2
+
+==========  ======= ======  ====================================================
+Date        Release Trac    Changes
+==========  ======= ======  ====================================================
+2007/12/25  0.3     N/A     Included changes submitted by K. Rader of Google:
+                            - Added the `-i` argument to specify a file-list 
+                              file
+                            - Fixups to the header and footer to make a valid 
+                              file that cscope can read
+----------  ------- ------  ----------------------------------------------------
+2006/08/12  0.2     #33     Create 0.2 release.
+
+                    #34     Change all "pyscope" to "pycscope"
+
+                    #29     Make error reports less vague.
+
+                    #23     Create distutils files.
+
+                    #20     Create unit tests.
+
+----------  ------- ------  ----------------------------------------------------
+2006/08/02  0.1     None    Released to interested party by
+                            email.
+
+                    #19     Observe newlines even without
+                            NEWLINE token.
+
+                    #18     Newlines before MARK_FILE causes
+                            exception.
+
+                    #16     Work on "." default directory.
+
+                    #10     Exception: TypeError in format.
+
+                    #8      Class mark is incorrect.
+
+                    #6      Create project space.
+==========  ======= ======  ====================================================

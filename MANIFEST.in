@@ -1,0 +1,2 @@
+include LICENSE runtests.py
+recursive-include test *.py

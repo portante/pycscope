@@ -1,0 +1,121 @@
+From http://www1.bell-labs.com/project/wwexptools/cscope/cscope.html
+
+File format:
+    <Header>
+    <first file symbol data>
+         ...
+    <last file symbol data>
+    <Trailer>
+
+Header:
+    cscope <format version> <current dir> [-c] [-q <symbols>] [-T] <trailer offset>
+
+For each file:
+    <file mark><file path>
+    <empty line>
+
+For each source line with symbol:
+    <line number><blank><non-symbol text>\n
+    <optional mark><symbol>\n
+    <non-symbol text>\n
+    ..repeat above 2 lines as necessary
+    <empty line>\n
+
+Symbol data for last file ends with
+    <file mark>
+
+A mark is a tab followed by one of these characters:
+
+    Char   Meaning
+    ----   -------------------------------------------
+    @      file
+    $      function definition
+    `      function call
+    }      function end
+    #      #define
+    )      #define end
+    ~      #include
+    =      direct assignment, increment, or decrement
+    ;      enum/struct/union definition end
+    c      class definition
+    e      enum definition
+    g      other global definition
+    l      function/block local definition
+    m      global enum/struct/union member definition
+    p      function parameter definition
+    s      struct definition
+    t      typedef definition
+    u      union definition
+
+The trailer contains lists of source directories, include directories, and source files.
+Trailer:
+    [<number of viewpath nodes>
+    <first directory in viewpath, if any>
+         ...
+    <last directory in viewpath>]
+    <number of source directories>
+    <first source directory path (always .)>
+         ...
+    <last source directory path>
+    <number of include directories>
+    <first include directory path>
+         ...
+    <last include directory path (normally /usr/include)>
+    <number of source and included files>
+    <length of string space needed>
+    <first file path>
+         ...
+    <last file path>
+
+
+###########################################
+
+Where is this symbol used?
+Where is it defined?
+Where did this variable get its value?
+What is this global symbol's definition?
+Where is this function in the source files?
+What functions call this function?
+What functions are called by this function?
+Where does the message "out of space" come from?
+Where is this source file in the directory structure?
+What files include this header file?
+
+After the database is  ready  cscope  will  display  these
+input fields:
+
+    Find this C symbol:
+    Find this definition:
+    Find functions called by this function:
+    Find functions calling this function:
+    Find assignments to:
+    Change this grep pattern:
+    Find this egrep pattern:
+    Find this file:
+    Find files #including this file:
+
+From http://cscope.sourceforge.net/cscope_vim_tutorial.html :
+
+    Char    Meaning
+    ----    -------------------------------------------
+*   s       all the uses of the symbol
+    g       finds the global definition(s) of a symbol
+*   c       finds all calls to a function
+    f       opens the filename under the cursor
+
+
+* Since ctags handles lookup of the definitions, cscope should handle
+ "find all calls to a function" and "all uses of the symbol" (in that order).
+
+From: http://cscope.sourceforge.net/cscope_maps.vim
+
+    " The following maps all invoke one of the following cscope search types:
+    "
+    "   's'   symbol: find all references to the token under cursor
+    "   'g'   global: find global definition(s) of the token under cursor
+    "   'c'   calls:  find all calls to the function name under cursor
+    "   't'   text:   find all instances of the text under cursor
+    "   'e'   egrep:  egrep search for the word under cursor
+    "   'f'   file:   open the filename under cursor
+    "   'i'   includes: find files that include the filename under cursor
+    "   'd'   called: find functions that function under cursor calls
