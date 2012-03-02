@@ -10,42 +10,44 @@ import pycscope
 class TestIssues(unittest.TestCase):
 
     def setUp(self,):
-        self.idxbuf = []
-        self.fnmbuf = []
+        self.buf = []
+        self.fnbuf = []
+
 
     def test0018(self,):
-        """ Make sure two newlines occur after a file mark when the source
-            file starts with non-symbol text.
+        """ Make sure two newlines occur after a file mark
+            when the source file starts with non-symbol text.
         """
         cwd = os.getcwd()
         fn = "issue0018.py"
-        pycscope.parseFile(cwd, fn, self.idxbuf, self.fnmbuf)
-        output = "".join(self.idxbuf)
+        l = pycscope.parseFile(cwd, fn, self.buf, 0, self.fnbuf)
+        self.assertEqual(l, len(self.buf))
+        output = "".join(self.buf)
         self.assertEqual(output, "\n"
                                  "\t@issue0018.py\n"
                                  "\n"
                                  "1 import \n"
-                                 "\t~<sys\n"
-                                 "\n"
+                                 "\t~sys\n"
                                  "\n"
                                  "3 \n"
-                                 "a\n"
-                                 "= 42 \n"
-                                 "\n"
-                                 "4 \n")
+                                 "\t=a\n"
+                                 " = 42\n"
+                                 "\n")
+
 
     def test0019(self,):
-        """ Make sure new lines are observed when NEWLINE token doesn't exist.
+        """ Make sure new lines are observed 
+            when NEWLINE token doesn't exist.
         """
         src = "(a,\nb) = 4, 2\n"
-        pycscope.parseSource(src, self.idxbuf)
-        output = "".join(self.idxbuf)
-        self.assertEqual(output, "\n"
-                                 "\n"
-                                 "1 ( \n"
-                                 "a\n"
-                                 ", \n"
+        l = pycscope.parseSource(src, self.buf, 0)
+        self.assertEqual(l, len(self.buf))
+        output = "".join(self.buf)
+        self.assertEqual(output, "1 ( \n"
+                                 "\t=a\n"
+                                 " ,\n"
                                  "\n"
                                  "2 \n"
-                                 "b\n"
-                                 ") = 4 , 2 \n")
+                                 "\t=b\n"
+                                 " ) = 4 , 2\n"
+                                 "\n")

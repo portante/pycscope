@@ -11,6 +11,9 @@ from test import testparsesource
 def main():
     testcases = (testissues.TestIssues,
                  testparsesource.TestParseSource,
+                 testparsesource.TestSymbol,
+                 testparsesource.TestNonSymbol,
+                 testparsesource.TestMark,
                 )
     suite = unittest.TestSuite(map(unittest.makeSuite, testcases))
 
