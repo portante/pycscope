@@ -533,7 +533,6 @@ def parseSource(sourcecode, indexbuff, indexbuff_len):
             self.assigned_cnt = 0
             self.dotted_cnt = 0
             self.import_cnt = 0
-            self.trailer_cnt = 0
             self.func_def_lvl = -1
             self.import_stmt = False
             self.decorator = False
@@ -676,18 +675,6 @@ def parseSource(sourcecode, indexbuff, indexbuff_len):
                 # Handle named function calls like: name.name() or
                 # name.name(a,b=1,c)
                 ctx.setMark(ast[-2][2], Mark.FUNC_CALL)
-        elif (ast[0] == symbol.trailer) and (ctx.trailer_cnt > 0):
-            # Handle trailers in function calls; the last trailer of
-            # the count should contain a name that will be marked as
-            # the function call.
-            ctx.trailer_cnt -= 1
-            if ctx.trailer_cnt == 0:
-                assert len(ast) == 3
-                assert ast[1][0] == token.DOT
-                assert ast[2][0] == token.NAME
-                # Last trailer with a NAME, it will be marked as a
-                # function call.
-                ctx.mark = Mark.FUNC_CALL
 
     def processTerminal(ctx, ast):
         """ Process a given AST tuple representing a terminal symbol
