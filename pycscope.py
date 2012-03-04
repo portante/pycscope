@@ -577,6 +577,10 @@ def parseSource(sourcecode, indexbuff, indexbuff_len):
                 and (ast[2][-1][0] == token.RPAR)
 
     def isTrailorFuncCall(ast):
+        """ Figure out if this AST sub-tree represents a trailer name function
+            call; that is, one which looks like name.name(), or
+            name.name(arg,arg=1).
+        """
         if len(ast) < 4:
             return False
 
@@ -621,23 +625,24 @@ def parseSource(sourcecode, indexbuff, indexbuff_len):
             ctx.import_stmt = True # FIX-ME
         elif ctx.import_stmt and (ast[0] == symbol.dotted_as_names):
             # Figure out how many imports there are
-            ctx.import_cnt = len(ast)/2 # FIX-ME
+            ctx.import_cnt = len(ast)/2
+            # FIXME: Handle import counts correctly: when do we decrement import_cnt?
         elif ast[0] == symbol.dotted_name:
             # Handle dotted names
             if ctx.import_stmt:
-                # For imports, we want to collect them all together to
-                # form one symbol. We get a count of names coming by
-                # dividing the number of elements in this AST by two:
-                # a NAME is always preceded by something, either
-                # symbol.dotted_name or by token.DOT
+                # For imports, we want to collect them all together to form
+                # one symbol. We get a count of names coming by dividing the
+                # number of elements in this AST by two: a NAME is always
+                # preceded by something, either symbol.dotted_name or by
+                # token.DOT
                 ctx.dotted_cnt = len(ast)/2
             elif ctx.decorator:
-                # Decorators use dotted names, but we don't want to
-                # consider the entire sequence as the function being
-                # called since the functions are not defined that
-                # way. Instead, we only mark the last symbol in the
-                # sequence as being a function call.
+                # Decorators use dotted names, but we don't want to consider
+                # the entire sequence as the function being called since the
+                # functions are not defined that way. Instead, we only mark
+                # the last symbol in the sequence as being a function call.
                 ctx.setMark(ast[-1], Mark.FUNC_CALL)
+                # FIX-ME: Should we not be clearing the decorator context?
         elif ast[0] == symbol.expr_stmt:
             # Look for assignment statements
             #   testlist, EQUAL, testlist [, EQUAL, testlist, ...]
