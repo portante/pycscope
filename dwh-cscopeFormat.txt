@@ -26,26 +26,29 @@ Symbol data for last file ends with
 
 A mark is a tab followed by one of these characters:
 
-    Char   Meaning
+    Char   Meaning (used by cscope 15.7a and later)
     ----   -------------------------------------------
-    @      file
-    $      function definition
-    `      function call
-    }      function end
+    c      class definition
     #      #define
     )      #define end
-    ~      #include
-    =      direct assignment, increment, or decrement
-    ;      enum/struct/union definition end
-    c      class definition
     e      enum definition
+    `      function call
+    $      function definition
+    }      function end
     g      other global definition
-    l      function/block local definition
+    ~      #include
     m      global enum/struct/union member definition
-    p      function parameter definition
+    @      file
     s      struct definition
     t      typedef definition
     u      union definition
+
+    Char   Meaning (not used ...)
+    ----   -------------------------------------------
+    =      direct assignment, increment, or decrement
+    ;      enum/struct/union definition end
+    l      function/block local definition
+    p      function parameter definition
 
 The trailer contains lists of source directories, include directories, and source files.
 Trailer:
