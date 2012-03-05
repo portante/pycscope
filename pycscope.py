@@ -23,7 +23,7 @@ import getopt, sys, os, os.path, string, types
 import keyword, parser, symbol, token, compiler
 from threading import Lock, Thread
 
-class Mark():
+class Mark(object):
     """ Marks, as defined by Cscope, that are implemented.
     """
     FILE = "@"
@@ -311,7 +311,7 @@ def dumpAst(ast):
     import pprint
     pprint.pprint(replaceNodeType(ast.tolist(True)))
 
-class Symbol():
+class Symbol(object):
     """ A representation of a what cscope considers a 'symbol'.
     """
     def __init__(self, name, mark=None):
@@ -374,7 +374,7 @@ class Symbol():
         """
         return self.__mark == mark
 
-class NonSymbol():
+class NonSymbol(object):
     """ A representation of a what cscope considers a 'non-symbol' text.
     """
     def __init__(self, val):
@@ -401,7 +401,7 @@ class NonSymbol():
     def __repr__(self):
         return "<NonSymbol:%s>" % self.format()
 
-class Line():
+class Line(object):
     def __init__(self, num):
         assert ((type(num) == types.IntType) or (type(num) == types.LongType)) and num > 0, "Requires a positive, non-zero integer for a line number"
         self.lineno = num
@@ -505,21 +505,36 @@ class Line():
         """
         return NotImplemented
 
-class Context():
+class Context(object):
+    ''' Object representing the context for understanding the AST tree during
+        one single pass.
+
+        The buffer of Line objects with at least one symbol is maintained
+        here. The current line is represented as a Line object, where it is
+        saved to the buffer if it has at least one Symbol in it.
+
+        This object also maintained a bunch of state to properly interpret AST
+        entries as they are encountered.
+
+        Cscope uses Marks to help it understand what a symbol is for. As the
+        AST tree is processed, often we'll look ahead into the AST tree to
+        associate a Mark with a Symbol before we have processed that
+        Symbol. The dictionary of Marks encapsulates that state.
+    '''
     # Buffer of lines in the Cscope database (individual strings in a list)
     def __init__(self):
-        self.buff = []
-        self.line = Line(1)
-        self.mark = ''
-        self.marks = {}
-        self.indent_lvl = 0
-        self.equal_cnt = 0
-        self.assigned_cnt = 0
-        self.dotted_cnt = 0
-        self.import_cnt = 0
-        self.func_def_lvl = -1
-        self.import_stmt = False
-        self.decorator = False
+        self.buff = []              # The accumlated list of lines with symbols
+        self.line = Line(1)         # The current line being processed
+        self.marks = {}             # Association of AST tuples to a Marks
+        self.mark = ''              # The Mark to be applied to the next symbol
+        self.indent_lvl = 0         # Indentation level, used to track outer fn
+        self.equal_cnt = 0          # Number of equal signs expected for assgns
+        self.assigned_cnt = 0       # Number of assignments taken place
+        self.dotted_cnt = 0         # Number of dots to expect
+        self.import_cnt = 0         # Number of import statements to expect
+        self.func_def_lvl = -1      # Function definition level, to track outer
+        self.import_stmt = False    # Handling an import statement (FIXME)
+        self.decorator = False      # Handling a decorator (FIXME)
 
     def setMark(self, tup, mark):
         ''' Add a mark to the dictionary for the given tuple
@@ -529,6 +544,11 @@ class Context():
         self.marks[tup] = mark
 
     def getMark(self, tup):
+        ''' Get the mark associated with the given tuple. This is a one shot
+            deal, as we delete the association from the dictionary to prevent
+            unnecessary accumlation of these associations given we never
+            rewalk the tree (one pass only).
+        '''
         assert tup in self.marks
         mark = self.marks[tup]
         del(self.marks[tup])
