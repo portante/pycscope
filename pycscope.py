@@ -505,6 +505,323 @@ class Line():
         """
         return NotImplemented
 
+class Context():
+    # Buffer of lines in the Cscope database (individual strings in a list)
+    def __init__(self):
+        self.buff = []
+        self.line = Line(1)
+        self.mark = ''
+        self.marks = {}
+        self.indent_lvl = 0
+        self.equal_cnt = 0
+        self.assigned_cnt = 0
+        self.dotted_cnt = 0
+        self.import_cnt = 0
+        self.func_def_lvl = -1
+        self.import_stmt = False
+        self.decorator = False
+
+    def setMark(self, tup, mark):
+        ''' Add a mark to the dictionary for the given tuple
+        '''
+        assert tup not in self.marks
+        assert tup[0] == token.NAME
+        self.marks[tup] = mark
+
+    def getMark(self, tup):
+        assert tup in self.marks
+        mark = self.marks[tup]
+        del(self.marks[tup])
+        return mark
+
+    def commit(self, lineno=None):
+        ''' Commit a processed souce line to the buffer
+        '''
+        line = str(self.line)
+        if line:
+            self.buff.append(line)
+        if lineno:
+            self.line = Line(lineno)
+        else:
+            self.line = None
+
+def isNamedFuncCall(ast):
+    """ Figure out if this AST sub-tree represents a named function call;
+        that is, one which looks like name(), or name(arg,arg=1).
+    """
+    if len(ast) < 3:
+        return False
+
+    return (ast[1][0] == symbol.atom) \
+            and (ast[1][1][0] == token.NAME) \
+            and (ast[2][0] == symbol.trailer) \
+            and (ast[2][1][0] == token.LPAR) \
+            and (ast[2][-1][0] == token.RPAR)
+
+def isTrailorFuncCall(ast):
+    """ Figure out if this AST sub-tree represents a trailer name function
+        call; that is, one which looks like name.name(), or
+        name.name(arg,arg=1).
+    """
+    if len(ast) < 4:
+        return False
+
+    return (ast[-2][0] == symbol.trailer) \
+            and (ast[-2][1][0] == token.DOT) \
+            and (ast[-2][2][0] == token.NAME) \
+            and (ast[-1][0] == symbol.trailer) \
+            and (ast[-1][1][0] == token.LPAR) \
+            and (ast[-1][-1][0] == token.RPAR)
+
+def processNonTerminal(ctx, ast):
+    """ Process a given AST tuple representing a non-terminal symbol
+    """
+    # We have a non-terminal "symbol"
+    if ast[0] == symbol.global_stmt:
+        # Handle global declarations
+        for i in range(2, len(ast)):
+            if not i % 2:
+                # Even indices are the names
+                assert ast[i][0] == token.NAME
+                ctx.setMark(ast[i], Mark.GLOBAL)
+    elif ast[0] == symbol.funcdef:
+        if ctx.func_def_lvl == -1:
+            # Handle function definitions. NOTE: we only mark the
+            # outer most function name as a function definition
+            # since the cscope utility can't handle nested
+            # functions. So all nested function definitions will
+            # not be marked as such.
+            ctx.func_def_lvl = ctx.indent_lvl
+            idx = 1
+            if ast[idx][0] == symbol.decorators:
+                # Skip the optional decorators
+                idx += 1
+            assert (ast[idx][0] == token.NAME) and (ast[idx][1] == 'def')
+            idx += 1
+            ctx.setMark(ast[idx], Mark.FUNC_DEF)
+    if ast[0] == symbol.decorator:
+        # Handle decorators.
+        ctx.decorator = True
+    elif ast[0] == symbol.import_stmt:
+        # Handle various kinds of import statements (from ...; import ...)
+        ctx.import_stmt = True # FIX-ME
+    elif ctx.import_stmt and (ast[0] == symbol.dotted_as_names):
+        # Figure out how many imports there are
+        ctx.import_cnt = len(ast)/2
+        # FIXME: Handle import counts correctly: when do we decrement import_cnt?
+    elif ast[0] == symbol.dotted_name:
+        # Handle dotted names
+        if ctx.import_stmt:
+            # For imports, we want to collect them all together to form
+            # one symbol. We get a count of names coming by dividing the
+            # number of elements in this AST by two: a NAME is always
+            # preceded by something, either symbol.dotted_name or by
+            # token.DOT
+            ctx.dotted_cnt = len(ast)/2
+        elif ctx.decorator:
+            # Decorators use dotted names, but we don't want to consider
+            # the entire sequence as the function being called since the
+            # functions are not defined that way. Instead, we only mark
+            # the last symbol in the sequence as being a function call.
+            ctx.setMark(ast[-1], Mark.FUNC_CALL)
+            # FIX-ME: Should we not be clearing the decorator context?
+    elif ast[0] == symbol.expr_stmt:
+        # Look for assignment statements
+        #   testlist, EQUAL, testlist [, EQUAL, testlist, ...]
+        l = len(ast)
+        if (l >= 4):
+            if (ast[1][0] == symbol.testlist) and (ast[2][0] == symbol.augassign) and (ast[3][0] == symbol.testlist):
+                # testlist, augassign, testlist
+                assert (ctx.mark == '' and ctx.equal_cnt == 0 and ctx.assigned_cnt == 0), \
+                        "Nested augmented assignment statement (mark: %s, equal_cnt: %d, assigned_cnt: %d)?" \
+                        % (ctx.mark, ctx.equal_cnt, ctx.assigned_cnt)
+                ctx.mark = Mark.ASSIGN
+                ctx.equal_cnt = ctx.assigned_cnt = 1
+            elif (ast[1][0] == symbol.testlist) and (ast[2][0] == token.EQUAL):
+                # testlist, EQUAL, ...
+                assert (ctx.mark == '' and ctx.equal_cnt == 0 and ctx.assigned_cnt == 0), \
+                        "Nested assignment statement (mark: %s, equal_cnt: %d, assigned_cnt: %d)?" \
+                        % (ctx.mark, ctx.equal_cnt, ctx.assigned_cnt)
+                ctx.mark = Mark.ASSIGN
+                ctx.equal_cnt = 1
+                for i in range(3, l):
+                    if ast[i][0] == token.EQUAL:
+                        ctx.equal_cnt += 1
+                    else:
+                        assert ast[i][0] == symbol.testlist, "Bad form: "
+                ctx.assigned_cnt = ctx.equal_cnt
+    elif ast[0] == symbol.classdef:
+        # Handle class declarations.
+        assert (ast[1][0] == token.NAME) and (ast[1][1] == 'class')
+        ctx.setMark(ast[2], Mark.CLASS)
+    elif ast[0] == symbol.power:
+        if isNamedFuncCall(ast):
+            # Simple named functional call like: name() or name(a,b=1,c)
+            ctx.setMark(ast[1][1], Mark.FUNC_CALL)
+        if isTrailorFuncCall(ast):
+            # Handle named function calls like: name.name() or
+            # name.name(a,b=1,c)
+            ctx.setMark(ast[-2][2], Mark.FUNC_CALL)
+
+def processTerminal(ctx, ast):
+    """ Process a given AST tuple representing a terminal symbol
+    """
+    global kwlist
+
+    if ast[0] == token.DEDENT:
+        # Indentation is not recorded, but still processed. A
+        # dedent is handled before we process any line number
+        # changes so that we can properly mark the end of a
+        # function.
+        ctx.indent_lvl -= 1
+        if ctx.indent_lvl == ctx.func_def_lvl:
+            ctx.func_def_lvl = -1
+            ctx.line += Symbol('', Mark.FUNC_END)
+        return
+
+    # Remember on what line this terminal symbol ended
+    lineno = int(ast[2])
+    if (lineno != ctx.line.lineno) and (ast[0] != token.STRING):
+        # Handle a token on a new line without seeing a NEWLINE
+        # token (line continuation with backslash). Skip this for
+        # STRINGs so that a display utility can display Python
+        # multi-line strings.
+        ctx.commit(lineno)
+
+    # Handle tokens
+    if ast[0] == token.NEWLINE:
+        # Handle new line tokens: we ignore them as a change in
+        # the line number for a token will commit a line (or EOF,
+        # see below).
+        pass
+    elif ast[0] == token.INDENT:
+        # Indentation is not recorded, but still processed
+        ctx.indent_lvl += 1
+    elif ast[0] == token.STRING:
+        # Handle strings: make sure newline's within strings are
+        # escaped.
+        ctx.line += NonSymbol(ast[1].replace("\n", "\\n"))
+    elif ast[0] == token.EQUAL:
+        # Handle assignment statements. Here, any user defined
+        # symbol before the equal sign should be marked
+        # appropriately as being "assigned to".
+        ctx.line += NonSymbol(ast[1])
+        if (ctx.mark == Mark.ASSIGN) and (ctx.equal_cnt >= 1):
+            ctx.equal_cnt -= 1
+            if ctx.equal_cnt == 0:
+                assert ctx.assigned_cnt == 0, "Assignments were not all made"
+                # Remove the assignment marker since there are no more
+                # equal signs in this sequence.
+                ctx.mark = ''
+    elif ((ast[0] >= token.PLUSEQUAL) and (ast[0] <= token.DOUBLESTAREQUAL)) or (ast[0] == token.DOUBLESLASHEQUAL):
+        # Handle augmented assignment statements.
+        assert ctx.mark == Mark.ASSIGN, "Wrong marker (mark: %s)?" % ctx.mark
+        # "There can be only one!" -Kergen, Highlander, 1986
+        assert (ctx.equal_cnt == 1 and ctx.assigned_cnt == 0), \
+                "Can't have nested augmented assignment statements (equal_cnt: %d, assigned_cnt: %d)" \
+                % (ctx.equal_cnt, ctx.assigned_cnt)
+        ctx.line += NonSymbol(ast[1])
+        ctx.equal_cnt = 0
+        ctx.mark = ''
+    elif ast[0] == token.COMMA:
+        # Comma tokens are always added to the line
+        ctx.line += NonSymbol(ast[1])
+        # If we are dealing with an assignment, we have encountered a
+        # comma which means the symbol following is also being assigned
+        # to, so we need to bump the assigned count back up to properly
+        # handle that below.
+        if ctx.mark == Mark.ASSIGN:
+            assert ctx.equal_cnt > 0, "Comma encountered, but assignment marker in place without an equal count"
+            assert (ctx.assigned_cnt + 1) == ctx.equal_cnt, "Comma encountered, but an assignment has not already taken place"
+            ctx.assigned_cnt += 1
+    elif ast[0] == token.NAME:
+        # Handle terminal names, could be a python keyword or
+        # user defined symbol, or part of a dotted name sequence.
+        if ctx.dotted_cnt > 0:
+            # The name is part of a dotted_name sequence from an
+            # import. Decrement the count of names in the sequence
+            # as we are consuming one now.
+            ctx.line += Symbol(ast[1], Mark.INCLUDE)
+            ctx.dotted_cnt -= 1
+        elif ast[1] in kwlist:
+            # Python keywords are treated as non-symbol text
+            ctx.line += NonSymbol(ast[1])
+        else:
+            # Not a python keyword, symbol text
+            if ast in ctx.marks:
+                s = Symbol(ast[1], ctx.getMark(ast))
+            elif ctx.mark:
+                if (ctx.mark == Mark.ASSIGN):
+                    # Don't consume the marker if it is an
+                    # assignment type, since there can be multiple
+                    # symbols for an assignment.
+                    if ctx.equal_cnt == ctx.assigned_cnt:
+                        # The first symbol encountered for assignments is
+                        # the only one marked.
+                        s = Symbol(ast[1], ctx.mark)
+                        ctx.assigned_cnt -= 1
+                    else:
+                        # Subsequent symbols encountered before the
+                        # following assignment are not marked.
+                        s = Symbol(ast[1])
+                elif ctx.mark == Mark.INCLUDE:
+                    # Don't consume the marker for includes
+                    # either, as this could be a NAME in a dotted
+                    # name sequence.
+                    s = Symbol(ast[1], ctx.mark)
+                else:
+                    s = Symbol(ast[1], ctx.mark)
+                    # Consume the mark since it only applies to the first
+                    # symbol encountered.
+                    ctx.mark = ''
+            else:
+                s = Symbol(ast[1])
+            ctx.line += s
+    elif ast[0] == token.DOT:
+        if ctx.dotted_cnt > 0:
+            # Add the "." to the include symbol, as we are
+            # building a larger symbol from all the dotted names
+            ctx.line += Symbol(ast[1], Mark.INCLUDE)
+        else:
+            # Add the "." as a non-symbol.
+            ctx.line += NonSymbol(ast[1])
+    elif token.ISEOF(ast[0]):
+        # End of compilation: consume this token without adding it
+        # to the line, committing any line being processed.
+        ctx.commit()
+    else:
+        # All other tokens are simply added to the line
+        ctx.line += NonSymbol(ast[1])
+
+def processAst(ctx, ast):
+    """ Process a given AST tuple
+    """
+    if token.ISNONTERMINAL(ast[0]):
+        processNonTerminal(ctx, ast)
+    else:
+        processTerminal(ctx, ast)
+
+def walkAst(ctx, ast):
+    """ Scan the AST (tuple) for tokens, appending index lines to the buffer.
+    """
+    indent = 0
+    stack = [(ast, indent)]
+    while stack:
+        ast, indent = stack.pop()
+
+        #print "%s%s" % (" " * indent, nodeNames[ast[0]])
+        processAst(ctx, ast)
+
+        indented = False
+        for i in range(len(ast)-1, 0, -1):
+            if type(ast[i]) == types.TupleType:
+                # Push it onto the processing stack
+                # Mirrors a recursive solution
+                if not indented:
+                    indent += 2
+                    indented = True
+                stack.append((ast[i], indent))
+
 def parseSource(sourcecode, indexbuff, indexbuff_len):
     """Parses python source code and puts the resulting index information into the buffer.
     """
@@ -521,324 +838,7 @@ def parseSource(sourcecode, indexbuff, indexbuff_len):
     if debug:
         dumpAst(ast)
 
-    class Context():
-        # Buffer of lines in the Cscope database (individual strings in a list)
-        def __init__(self):
-            self.buff = []
-            self.line = Line(1)
-            self.mark = ''
-            self.marks = {}
-            self.indent_lvl = 0
-            self.equal_cnt = 0
-            self.assigned_cnt = 0
-            self.dotted_cnt = 0
-            self.import_cnt = 0
-            self.func_def_lvl = -1
-            self.import_stmt = False
-            self.decorator = False
-
-        def setMark(self, tup, mark):
-            ''' Add a mark to the dictionary for the given tuple
-            '''
-            assert tup not in ctx.marks
-            assert tup[0] == token.NAME
-            ctx.marks[tup] = mark
-
-        def getMark(self, tup):
-            assert tup in ctx.marks
-            mark = ctx.marks[tup]
-            del(ctx.marks[tup])
-            return mark
-
-        def commit(self, lineno=None):
-            ''' Commit a processed souce line to the buffer
-            '''
-            line = str(self.line)
-            if line:
-                self.buff.append(line)
-            if lineno:
-                ctx.line = Line(lineno)
-            else:
-                ctx.line = None
-
     ctx = Context()
-
-    def isNamedFuncCall(ast):
-        """ Figure out if this AST sub-tree represents a named function call;
-            that is, one which looks like name(), or name(arg,arg=1).
-        """
-        if len(ast) < 3:
-            return False
-
-        return (ast[1][0] == symbol.atom) \
-                and (ast[1][1][0] == token.NAME) \
-                and (ast[2][0] == symbol.trailer) \
-                and (ast[2][1][0] == token.LPAR) \
-                and (ast[2][-1][0] == token.RPAR)
-
-    def isTrailorFuncCall(ast):
-        """ Figure out if this AST sub-tree represents a trailer name function
-            call; that is, one which looks like name.name(), or
-            name.name(arg,arg=1).
-        """
-        if len(ast) < 4:
-            return False
-
-        return (ast[-2][0] == symbol.trailer) \
-                and (ast[-2][1][0] == token.DOT) \
-                and (ast[-2][2][0] == token.NAME) \
-                and (ast[-1][0] == symbol.trailer) \
-                and (ast[-1][1][0] == token.LPAR) \
-                and (ast[-1][-1][0] == token.RPAR)
-
-    def processNonTerminal(ctx, ast):
-        """ Process a given AST tuple representing a non-terminal symbol
-        """
-        # We have a non-terminal "symbol"
-        if ast[0] == symbol.global_stmt:
-            # Handle global declarations
-            for i in range(2, len(ast)):
-                if not i % 2:
-                    # Even indices are the names
-                    assert ast[i][0] == token.NAME
-                    ctx.setMark(ast[i], Mark.GLOBAL)
-        elif ast[0] == symbol.funcdef:
-            if ctx.func_def_lvl == -1:
-                # Handle function definitions. NOTE: we only mark the
-                # outer most function name as a function definition
-                # since the cscope utility can't handle nested
-                # functions. So all nested function definitions will
-                # not be marked as such.
-                ctx.func_def_lvl = ctx.indent_lvl
-                idx = 1
-                if ast[idx][0] == symbol.decorators:
-                    # Skip the optional decorators
-                    idx += 1
-                assert (ast[idx][0] == token.NAME) and (ast[idx][1] == 'def')
-                idx += 1
-                ctx.setMark(ast[idx], Mark.FUNC_DEF)
-        if ast[0] == symbol.decorator:
-            # Handle decorators.
-            ctx.decorator = True
-        elif ast[0] == symbol.import_stmt:
-            # Handle various kinds of import statements (from ...; import ...)
-            ctx.import_stmt = True # FIX-ME
-        elif ctx.import_stmt and (ast[0] == symbol.dotted_as_names):
-            # Figure out how many imports there are
-            ctx.import_cnt = len(ast)/2
-            # FIXME: Handle import counts correctly: when do we decrement import_cnt?
-        elif ast[0] == symbol.dotted_name:
-            # Handle dotted names
-            if ctx.import_stmt:
-                # For imports, we want to collect them all together to form
-                # one symbol. We get a count of names coming by dividing the
-                # number of elements in this AST by two: a NAME is always
-                # preceded by something, either symbol.dotted_name or by
-                # token.DOT
-                ctx.dotted_cnt = len(ast)/2
-            elif ctx.decorator:
-                # Decorators use dotted names, but we don't want to consider
-                # the entire sequence as the function being called since the
-                # functions are not defined that way. Instead, we only mark
-                # the last symbol in the sequence as being a function call.
-                ctx.setMark(ast[-1], Mark.FUNC_CALL)
-                # FIX-ME: Should we not be clearing the decorator context?
-        elif ast[0] == symbol.expr_stmt:
-            # Look for assignment statements
-            #   testlist, EQUAL, testlist [, EQUAL, testlist, ...]
-            l = len(ast)
-            if (l >= 4):
-                if (ast[1][0] == symbol.testlist) and (ast[2][0] == symbol.augassign) and (ast[3][0] == symbol.testlist):
-                    # testlist, augassign, testlist
-                    assert (ctx.mark == '' and ctx.equal_cnt == 0 and ctx.assigned_cnt == 0), \
-                            "Nested augmented assignment statement (mark: %s, equal_cnt: %d, assigned_cnt: %d)?" \
-                            % (ctx.mark, ctx.equal_cnt, ctx.assigned_cnt)
-                    ctx.mark = Mark.ASSIGN
-                    ctx.equal_cnt = ctx.assigned_cnt = 1
-                elif (ast[1][0] == symbol.testlist) and (ast[2][0] == token.EQUAL):
-                    # testlist, EQUAL, ...
-                    assert (ctx.mark == '' and ctx.equal_cnt == 0 and ctx.assigned_cnt == 0), \
-                            "Nested assignment statement (mark: %s, equal_cnt: %d, assigned_cnt: %d)?" \
-                            % (ctx.mark, ctx.equal_cnt, ctx.assigned_cnt)
-                    ctx.mark = Mark.ASSIGN
-                    ctx.equal_cnt = 1
-                    for i in range(3, l):
-                        if ast[i][0] == token.EQUAL:
-                            ctx.equal_cnt += 1
-                        else:
-                            assert ast[i][0] == symbol.testlist, "Bad form: "
-                    ctx.assigned_cnt = ctx.equal_cnt
-        elif ast[0] == symbol.classdef:
-            # Handle class declarations.
-            assert (ast[1][0] == token.NAME) and (ast[1][1] == 'class')
-            ctx.setMark(ast[2], Mark.CLASS)
-        elif ast[0] == symbol.power:
-            if isNamedFuncCall(ast):
-                # Simple named functional call like: name() or name(a,b=1,c)
-                ctx.setMark(ast[1][1], Mark.FUNC_CALL)
-            if isTrailorFuncCall(ast):
-                # Handle named function calls like: name.name() or
-                # name.name(a,b=1,c)
-                ctx.setMark(ast[-2][2], Mark.FUNC_CALL)
-
-    def processTerminal(ctx, ast):
-        """ Process a given AST tuple representing a terminal symbol
-        """
-        global kwlist
-
-        if ast[0] == token.DEDENT:
-            # Indentation is not recorded, but still processed. A
-            # dedent is handled before we process any line number
-            # changes so that we can properly mark the end of a
-            # function.
-            ctx.indent_lvl -= 1
-            if ctx.indent_lvl == ctx.func_def_lvl:
-                ctx.func_def_lvl = -1
-                ctx.line += Symbol('', Mark.FUNC_END)
-            return
-
-        # Remember on what line this terminal symbol ended
-        lineno = int(ast[2])
-        if (lineno != ctx.line.lineno) and (ast[0] != token.STRING):
-            # Handle a token on a new line without seeing a NEWLINE
-            # token (line continuation with backslash). Skip this for
-            # STRINGs so that a display utility can display Python
-            # multi-line strings.
-            ctx.commit(lineno)
-
-        # Handle tokens
-        if ast[0] == token.NEWLINE:
-            # Handle new line tokens: we ignore them as a change in
-            # the line number for a token will commit a line (or EOF,
-            # see below).
-            pass
-        elif ast[0] == token.INDENT:
-            # Indentation is not recorded, but still processed
-            ctx.indent_lvl += 1
-        elif ast[0] == token.STRING:
-            # Handle strings: make sure newline's within strings are
-            # escaped.
-            ctx.line += NonSymbol(ast[1].replace("\n", "\\n"))
-        elif ast[0] == token.EQUAL:
-            # Handle assignment statements. Here, any user defined
-            # symbol before the equal sign should be marked
-            # appropriately as being "assigned to".
-            ctx.line += NonSymbol(ast[1])
-            if (ctx.mark == Mark.ASSIGN) and (ctx.equal_cnt >= 1):
-                ctx.equal_cnt -= 1
-                if ctx.equal_cnt == 0:
-                    assert ctx.assigned_cnt == 0, "Assignments were not all made"
-                    # Remove the assignment marker since there are no more
-                    # equal signs in this sequence.
-                    ctx.mark = ''
-        elif ((ast[0] >= token.PLUSEQUAL) and (ast[0] <= token.DOUBLESTAREQUAL)) or (ast[0] == token.DOUBLESLASHEQUAL):
-            # Handle augmented assignment statements.
-            assert ctx.mark == Mark.ASSIGN, "Wrong marker (mark: %s)?" % ctx.mark
-            # "There can be only one!" -Kergen, Highlander, 1986
-            assert (ctx.equal_cnt == 1 and ctx.assigned_cnt == 0), \
-                    "Can't have nested augmented assignment statements (equal_cnt: %d, assigned_cnt: %d)" \
-                    % (ctx.equal_cnt, ctx.assigned_cnt)
-            ctx.line += NonSymbol(ast[1])
-            ctx.equal_cnt = 0
-            ctx.mark = ''
-        elif ast[0] == token.COMMA:
-            # Comma tokens are always added to the line
-            ctx.line += NonSymbol(ast[1])
-            # If we are dealing with an assignment, we have encountered a
-            # comma which means the symbol following is also being assigned
-            # to, so we need to bump the assigned count back up to properly
-            # handle that below.
-            if ctx.mark == Mark.ASSIGN:
-                assert ctx.equal_cnt > 0, "Comma encountered, but assignment marker in place without an equal count"
-                assert (ctx.assigned_cnt + 1) == ctx.equal_cnt, "Comma encountered, but an assignment has not already taken place"
-                ctx.assigned_cnt += 1
-        elif ast[0] == token.NAME:
-            # Handle terminal names, could be a python keyword or
-            # user defined symbol, or part of a dotted name sequence.
-            if ctx.dotted_cnt > 0:
-                # The name is part of a dotted_name sequence from an
-                # import. Decrement the count of names in the sequence
-                # as we are consuming one now.
-                ctx.line += Symbol(ast[1], Mark.INCLUDE)
-                ctx.dotted_cnt -= 1
-            elif ast[1] in kwlist:
-                # Python keywords are treated as non-symbol text
-                ctx.line += NonSymbol(ast[1])
-            else:
-                # Not a python keyword, symbol text
-                if ast in ctx.marks:
-                    s = Symbol(ast[1], ctx.getMark(ast))
-                elif ctx.mark:
-                    if (ctx.mark == Mark.ASSIGN):
-                        # Don't consume the marker if it is an
-                        # assignment type, since there can be multiple
-                        # symbols for an assignment.
-                        if ctx.equal_cnt == ctx.assigned_cnt:
-                            # The first symbol encountered for assignments is
-                            # the only one marked.
-                            s = Symbol(ast[1], ctx.mark)
-                            ctx.assigned_cnt -= 1
-                        else:
-                            # Subsequent symbols encountered before the
-                            # following assignment are not marked.
-                            s = Symbol(ast[1])
-                    elif ctx.mark == Mark.INCLUDE:
-                        # Don't consume the marker for includes
-                        # either, as this could be a NAME in a dotted
-                        # name sequence.
-                        s = Symbol(ast[1], ctx.mark)
-                    else:
-                        s = Symbol(ast[1], ctx.mark)
-                        # Consume the mark since it only applies to the first
-                        # symbol encountered.
-                        ctx.mark = ''
-                else:
-                    s = Symbol(ast[1])
-                ctx.line += s
-        elif ast[0] == token.DOT:
-            if ctx.dotted_cnt > 0:
-                # Add the "." to the include symbol, as we are
-                # building a larger symbol from all the dotted names
-                ctx.line += Symbol(ast[1], Mark.INCLUDE)
-            else:
-                # Add the "." as a non-symbol.
-                ctx.line += NonSymbol(ast[1])
-        elif token.ISEOF(ast[0]):
-            # End of compilation: consume this token without adding it
-            # to the line, committing any line being processed.
-            ctx.commit()
-        else:
-            # All other tokens are simply added to the line
-            ctx.line += NonSymbol(ast[1])
-
-    def processAst(ctx, ast):
-        """ Process a given AST tuple
-        """
-        if token.ISNONTERMINAL(ast[0]):
-            processNonTerminal(ctx, ast)
-        else:
-            processTerminal(ctx, ast)
-
-    def walkAst(ctx, ast):
-        """ Scan the AST (tuple) for tokens, appending index lines to the buffer.
-        """
-        indent = 0
-        stack = [(ast, indent)]
-        while stack:
-            ast, indent = stack.pop()
-
-            #print "%s%s" % (" " * indent, nodeNames[ast[0]])
-            processAst(ctx, ast)
-
-            indented = False
-            for i in range(len(ast)-1, 0, -1):
-                if type(ast[i]) == types.TupleType:
-                    # Push it onto the processing stack
-                    # Mirrors a recursive solution
-                    if not indented:
-                        indent += 2
-                        indented = True
-                    stack.append((ast[i], indent))
 
     walkAst(ctx, ast.totuple(True))
     indexbuff.extend(ctx.buff)
