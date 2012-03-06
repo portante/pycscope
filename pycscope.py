@@ -83,13 +83,14 @@ kwlist = keyword.kwlist
 kwlist.extend(("True", "False", "None"))
 
 debug = False
+strings_as_symbols = False
 
 def main():
     """Parse command line args and act accordingly.
     """
     # Parse the command line arguments
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "Rf:i:t:")
+        opts, args = getopt.getopt(sys.argv[1:], "RSf:i:t:")
     except getopt.GetoptError:
         print __usage__
         sys.exit(2)
@@ -101,6 +102,8 @@ def main():
             debug = True
         if o == "-R":
             recurse = True
+        if o == "-S":
+            strings_as_symbols = True
         if o == "-t":
             try:
                 val = int(a)
@@ -326,8 +329,6 @@ class Symbol(object):
         """ Add text to the stored name.
         """
         assert other and (isinstance(other, Symbol)), "Must have another Symbol object to concatenate."
-        if self.__mark != other.__mark:
-            import pdb; pdb.set_trace()
         assert self.__mark == other.__mark, "Symbols must be marked the same."
         self.__name += other.__name
         return self
@@ -417,8 +418,6 @@ class Line(object):
         elif name == '_test_hasSymbol':
             return self.__hasSymbol
         else:
-            print "Line(): does not have attribute <%s>" % name
-            #import pdb; pdb.set_trace()
             raise AttributeError(name)
 
     def __add__(self, other):
@@ -528,20 +527,20 @@ class Context(object):
         self.marks = {}             # Association of AST tuples to a Marks
         self.mark = ''              # The Mark to be applied to the next symbol
         self.indent_lvl = 0         # Indentation level, used to track outer fn
+        self.func_def_lvl = -1      # Function definition level, to track outer
         self.equal_cnt = 0          # Number of equal signs expected for assgns
         self.assigned_cnt = 0       # Number of assignments taken place
-        self.dotted_cnt = 0         # Number of dots to expect
         self.import_cnt = 0         # Number of import statements to expect
-        self.func_def_lvl = -1      # Function definition level, to track outer
-        self.import_stmt = False    # Handling an import statement (FIXME)
+        self.import_name = False    # Handling an import ... statement (not from ... import ...)
         self.decorator = False      # Handling a decorator (FIXME)
 
     def setMark(self, tup, mark):
         ''' Add a mark to the dictionary for the given tuple
         '''
-        assert tup not in self.marks
-        assert tup[0] == token.NAME
-        self.marks[tup] = mark
+        idx = id(tup)
+        assert idx not in self.marks
+        assert tup[0] in (token.NAME, token.DOT)
+        self.marks[idx] = mark
 
     def getMark(self, tup):
         ''' Get the mark associated with the given tuple. This is a one shot
@@ -549,9 +548,10 @@ class Context(object):
             unnecessary accumlation of these associations given we never
             rewalk the tree (one pass only).
         '''
-        assert tup in self.marks
-        mark = self.marks[tup]
-        del(self.marks[tup])
+        idx = id(tup)
+        assert idx in self.marks
+        mark = self.marks[idx]
+        del(self.marks[idx])
         return mark
 
     def commit(self, lineno=None):
@@ -622,22 +622,42 @@ def processNonTerminal(ctx, ast):
     if ast[0] == symbol.decorator:
         # Handle decorators.
         ctx.decorator = True
-    elif ast[0] == symbol.import_stmt:
-        # Handle various kinds of import statements (from ...; import ...)
-        ctx.import_stmt = True # FIX-ME
-    elif ctx.import_stmt and (ast[0] == symbol.dotted_as_names):
-        # Figure out how many imports there are
+    elif ast[0] == symbol.import_from:
+        # The next tuple is the "from" string, so grab the following dotted
+        # name tuple, and mark each NAME and DOT terminal in that tuple list
+        # as an include. As they are added to the line they'll be merged into
+        # one big symbol marked as an include.
+        dnidx = 2
+        while ast[dnidx][0] == token.DOT:
+            dnidx += 1
+        for i in range(1, len(ast[dnidx])):
+            ctx.setMark(ast[dnidx][i], Mark.INCLUDE)
+    elif ast[0] == symbol.import_name:
+        # We are dealing with import ... statements, where for dotted name
+        # non-terminals it indicates an include module reference
+        ctx.import_name = True
+    elif ast[0] == symbol.dotted_as_names and ctx.import_name:
+        # Figure out how many imports are being performed for:
+        #
+        #     import a as b, b as c, c as d, ...
+        #
+        # We use a count so we don't have to walk the tree twice, allowing us
+        # to NOT consider the "as foo" as a symbol, only the "dotted" names.
         ctx.import_cnt = len(ast)/2
-        # FIXME: Handle import counts correctly: when do we decrement import_cnt?
     elif ast[0] == symbol.dotted_name:
         # Handle dotted names
-        if ctx.import_stmt:
-            # For imports, we want to collect them all together to form
-            # one symbol. We get a count of names coming by dividing the
-            # number of elements in this AST by two: a NAME is always
-            # preceded by something, either symbol.dotted_name or by
-            # token.DOT
-            ctx.dotted_cnt = len(ast)/2
+        if ctx.import_name:
+            assert ctx.import_cnt >= 1
+            # For imports, we want to collect them all together to form one
+            # symbol. To do that, we set each following tuple, which will be
+            # NAME, or NAME DOT NAME, etc. to all have INCLUDE marks. As the
+            # tree walk continues, these symbols sharing the same mark will be
+            # appended to make one continuous name.name.name symbol.,
+            for i in range(1, len(ast)):
+                ctx.setMark(ast[i], Mark.INCLUDE)
+            ctx.import_cnt -= 1
+            if ctx.import_cnt == 0:
+                ctx.import_name = False
         elif ctx.decorator:
             # Decorators use dotted names, but we don't want to consider
             # the entire sequence as the function being called since the
@@ -721,6 +741,15 @@ def processTerminal(ctx, ast):
         # Handle strings: make sure newline's within strings are
         # escaped.
         ctx.line += NonSymbol(ast[1].replace("\n", "\\n"))
+        if strings_as_symbols:
+            val = ast[1].strip()
+            if re.search("^[A-Za-z_][A-Za-z_0-9]*$", val) is not None:
+                # We have a string that is a valid Python identifier, emit a
+                # symbol referencer for it enclosed with double square
+                # brackets which will show up in the cscope display only.
+                ctx.line += NonSymbol("[[")
+                ctx.line += Symbol(val)
+                ctx.line += NonSymbol("]]")
     elif ast[0] == token.EQUAL:
         # Handle assignment statements. Here, any user defined
         # symbol before the equal sign should be marked
@@ -757,18 +786,12 @@ def processTerminal(ctx, ast):
     elif ast[0] == token.NAME:
         # Handle terminal names, could be a python keyword or
         # user defined symbol, or part of a dotted name sequence.
-        if ctx.dotted_cnt > 0:
-            # The name is part of a dotted_name sequence from an
-            # import. Decrement the count of names in the sequence
-            # as we are consuming one now.
-            ctx.line += Symbol(ast[1], Mark.INCLUDE)
-            ctx.dotted_cnt -= 1
-        elif ast[1] in kwlist:
+        if ast[1] in kwlist:
             # Python keywords are treated as non-symbol text
             ctx.line += NonSymbol(ast[1])
         else:
             # Not a python keyword, symbol text
-            if ast in ctx.marks:
+            if id(ast) in ctx.marks:
                 s = Symbol(ast[1], ctx.getMark(ast))
             elif ctx.mark:
                 if (ctx.mark == Mark.ASSIGN):
@@ -784,11 +807,6 @@ def processTerminal(ctx, ast):
                         # Subsequent symbols encountered before the
                         # following assignment are not marked.
                         s = Symbol(ast[1])
-                elif ctx.mark == Mark.INCLUDE:
-                    # Don't consume the marker for includes
-                    # either, as this could be a NAME in a dotted
-                    # name sequence.
-                    s = Symbol(ast[1], ctx.mark)
                 else:
                     s = Symbol(ast[1], ctx.mark)
                     # Consume the mark since it only applies to the first
@@ -798,10 +816,10 @@ def processTerminal(ctx, ast):
                 s = Symbol(ast[1])
             ctx.line += s
     elif ast[0] == token.DOT:
-        if ctx.dotted_cnt > 0:
+        if id(ast) in ctx.marks:
             # Add the "." to the include symbol, as we are
             # building a larger symbol from all the dotted names
-            ctx.line += Symbol(ast[1], Mark.INCLUDE)
+            ctx.line += Symbol(ast[1], ctx.getMark(ast))
         else:
             # Add the "." as a non-symbol.
             ctx.line += NonSymbol(ast[1])

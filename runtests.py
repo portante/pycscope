@@ -6,10 +6,12 @@ import unittest
 
 from test import testissues
 from test import testparsesource
+from test import testimports
 
 
 def main():
     testcases = (testissues.TestIssues,
+                 testimports.TestImports,
                  testparsesource.TestParseSource,
                  testparsesource.TestSymbol,
                  testparsesource.TestNonSymbol,
