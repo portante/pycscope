@@ -12,8 +12,9 @@ Purpose
 -------
 
 A python script to generate a cscope index from a Python source
-tree.  `pycscope` uses Python's own parser and AST to generate
-the index, so it is a bit more accurate than plain cscope.
+tree.  `pycscope` uses Python's own parser and (C)oncrete (S)yntax
+(T)ree to generate the index, so it is a bit more accurate than
+plain cscope.
 
 
 Usage
