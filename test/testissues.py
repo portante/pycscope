@@ -39,7 +39,7 @@ class TestIssues(unittest.TestCase):
         """ Make sure new lines are observed 
             when NEWLINE token doesn't exist.
         """
-        src = "(a,\nb) = 4, 2\n"
+        src = "(a,\nb,) = 4, 2\n"
         l = pycscope.parseSource(src, self.buf, 0)
         self.assertEqual(l, len(self.buf))
         output = "".join(self.buf)
@@ -49,5 +49,5 @@ class TestIssues(unittest.TestCase):
                                  "\n"
                                  "2 \n"
                                  "\t=b\n"
-                                 " ) = 4 , 2\n"
+                                 " , ) = 4 , 2\n"
                                  "\n")

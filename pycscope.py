@@ -760,6 +760,10 @@ def processTerminal(ctx, cst):
         if (ctx.mark == Mark.ASSIGN) and (ctx.equal_cnt >= 1):
             ctx.equal_cnt -= 1
             if ctx.equal_cnt == 0:
+                if ctx.assigned_cnt == 1:
+                    # Handle trailing commas simply by just dropping the
+                    # assigned count state to zero.
+                    ctx.assigned_cnt = 0
                 assert ctx.assigned_cnt == 0, "Assignments were not all made"
                 # Remove the assignment marker since there are no more
                 # equal signs in this sequence.
