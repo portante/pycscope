@@ -478,11 +478,11 @@ class TestParseSource(unittest.TestCase):
     def testFuncDefDecorator(self,):
         ''' Verify the ability to handle a function definition with one decorator.
         '''
-        self.verify(["@classmethod",
+        self.verify(["@bar",
                      "def main():",
                      "\tx = 0"],
                     ["1 @ ",
-                     "\t`classmethod",
+                     "\t`bar",
                      "",
                      "2 def ",
                      "\t$main",
@@ -497,15 +497,38 @@ class TestParseSource(unittest.TestCase):
     def testFuncDefDecorators(self,):
         ''' Verify the ability to handle a function definition with two decorators.
         '''
-        self.verify(["@classmethod",
-                     "@foobar",
+        self.verify(["@bar",
+                     "@foo",
                      "def main():",
                      "\tx = 0"],
                     ["1 @ ",
-                     "\t`classmethod",
+                     "\t`bar",
                      "",
                      "2 @ ",
-                     "\t`foobar",
+                     "\t`foo",
+                     "",
+                     "3 def ",
+                     "\t$main",
+                     " ( ) :",
+                     "",
+                     "4 ",
+                     "\t=x",
+                     " = 0 ",
+                     "\t}",
+                     ""])
+
+    def testFuncDefDecoratorsReserved(self,):
+        ''' Verify the ability to handle a function definition with decorators that are reserved.
+        '''
+        self.verify(["@property",
+                     "@classmethod",
+                     "def main():",
+                     "\tx = 0"],
+                    ["1 @ ",
+                     "property",
+                     "",
+                     "2 @ ",
+                     "classmethod",
                      "",
                      "3 def ",
                      "\t$main",

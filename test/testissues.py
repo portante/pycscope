@@ -51,3 +51,48 @@ class TestIssues(unittest.TestCase):
                                  "\t=b\n"
                                  " , ) = 4 , 2\n"
                                  "\n")
+
+    def testIssue0003(self):
+        """ Verify we don't have conflicting marks.
+        """
+        src = """
+class MyClass(object):
+
+    @property
+    def get_bar(self):
+        return 'foo'
+
+    def my_method(self):
+        from datetime import datetime
+"""
+        l = pycscope.parseSource(src, self.buf, 0)
+        self.assertEqual(l, len(self.buf))
+        output = "".join(self.buf)
+        self.assertEqual(output, "2 class \n"
+                                 "\tcMyClass\n"
+                                 " ( \n"
+                                 "object\n"
+                                 " ) :\n"
+                                 "\n"
+                                 "4 @ \n"
+                                 "property\n"
+                                 "\n"
+                                 "5 def \n"
+                                 "\t$get_bar\n"
+                                 " ( \n"
+                                 "self\n"
+                                 " ) :\n"
+                                 "\n"
+                                 "8 def \n"
+                                 "\t$my_method\n"
+                                 " ( \n"
+                                 "self\n"
+                                 " ) :\n"
+                                 "\n"
+                                 "9 from \n"
+                                 "\t~datetime\n"
+                                 " import \n"
+                                 "datetime\n"
+                                 " \n"
+                                 "\t}\n"
+                                 "\n")

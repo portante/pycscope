@@ -534,7 +534,6 @@ class Context(object):
         self.assigned_cnt = 0       # Number of assignments taken place
         self.import_cnt = 0         # Number of import statements to expect
         self.import_name = False    # Handling an import ... statement (not from ... import ...)
-        self.decorator = False      # Handling a decorator (FIXME)
 
     def setMark(self, tup, mark):
         ''' Add a mark to the dictionary for the given tuple
@@ -616,14 +615,40 @@ def processNonTerminal(ctx, cst):
             ctx.func_def_lvl = ctx.indent_lvl
             idx = 1
             if cst[idx][0] == symbol.decorators:
-                # Skip the optional decorators
+                # Skip the optional decorators under pre-2.7
+                # FIXME: verify this is the case.
                 idx += 1
             assert (cst[idx][0] == token.NAME) and (cst[idx][1] == 'def')
             idx += 1
             ctx.setMark(cst[idx], Mark.FUNC_DEF)
-    elif cst[0] == symbol.decorator:
-        # Handle decorators.
-        ctx.decorator = True
+    elif cst[0] == symbol.decorated \
+            and (cst[1][0] == symbol.decorators) \
+            and (cst[2][0] == symbol.funcdef):
+        # Handle function decorators only.
+        dcsts = cst[1]
+        for i in range(1, len(dcsts)):
+            # Handle each decorator
+            dcst = dcsts[i]
+
+            assert dcst[0] == symbol.decorator
+            assert dcst[1][0] == token.AT
+            assert dcst[2][0] == symbol.dotted_name
+
+            dotted = dcst[2]
+            dotted_len = len(dotted)
+            assert dotted_len >= 2
+            if dotted_len > 2:
+                # When decorators use dotted names, but we don't want to
+                # consider the entire sequence as the function being called
+                # since the functions are not defined that way. Instead, we
+                # only mark the last symbol in the sequence as being a
+                # function call.
+                ctx.setMark(dotted[-1], Mark.FUNC_CALL)
+            elif dotted_len == 2:
+                # Check for some builtin ones we should ignore
+                assert dotted[-1][0] == token.NAME
+                if dotted[-1][1] not in ('property', 'classmethod'):
+                    ctx.setMark(dotted[-1], Mark.FUNC_CALL)
     elif cst[0] == symbol.import_from:
         # The next tuple is the "from" string, so grab the following dotted
         # name tuple, and mark each NAME and DOT terminal in that tuple list
@@ -647,7 +672,7 @@ def processNonTerminal(ctx, cst):
         # to NOT consider the "as foo" as a symbol, only the "dotted" names.
         ctx.import_cnt = len(cst)/2
     elif cst[0] == symbol.dotted_name:
-        # Handle dotted names
+        # Handle dotted names for imports
         if ctx.import_name:
             assert ctx.import_cnt >= 1
             # For imports, we want to collect them all together to form one
@@ -660,13 +685,6 @@ def processNonTerminal(ctx, cst):
             ctx.import_cnt -= 1
             if ctx.import_cnt == 0:
                 ctx.import_name = False
-        elif ctx.decorator:
-            # Decorators use dotted names, but we don't want to consider
-            # the entire sequence as the function being called since the
-            # functions are not defined that way. Instead, we only mark
-            # the last symbol in the sequence as being a function call.
-            ctx.setMark(cst[-1], Mark.FUNC_CALL)
-            # FIX-ME: Should we not be clearing the decorator context?
     elif cst[0] == symbol.expr_stmt:
         # Look for assignment statements
         #   testlist, EQUAL, testlist [, EQUAL, testlist, ...]
