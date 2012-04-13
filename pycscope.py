@@ -621,7 +621,7 @@ def processNonTerminal(ctx, cst):
             assert (cst[idx][0] == token.NAME) and (cst[idx][1] == 'def')
             idx += 1
             ctx.setMark(cst[idx], Mark.FUNC_DEF)
-    if cst[0] == symbol.decorator:
+    elif cst[0] == symbol.decorator:
         # Handle decorators.
         ctx.decorator = True
     elif cst[0] == symbol.import_from:
