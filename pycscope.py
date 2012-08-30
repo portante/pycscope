@@ -910,7 +910,7 @@ def parseSource(sourcecode, indexbuff, indexbuff_len):
 def writeIndex(basepath, indexfn, indexbuff, fnamesbuff):
     """Write the index buffer to the output file.
     """
-    fout = open(os.path.join(basepath, indexfn), 'w')
+    fout = open(os.path.join(basepath, indexfn), 'wb')
 
     # Write the header and index
     index = ''.join(indexbuff)
