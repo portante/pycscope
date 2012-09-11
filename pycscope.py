@@ -9,8 +9,8 @@ from __future__ import print_function
 
 __author__ = "Dean Hall (dwhall256\x40yahoo\x2Ecom)"
 __copyright__ = "Copyright 2006 Dean Hall.  See LICENSE for details."
-__date__ = "2008/10/07"
-__version__ = "0.3a-pajp"
+__date__ = "2012/09/11"
+__version__ = "0.3b-pajp"
 __usage__ = """Usage: pycscope.py [-R] [-t cnt] [-f reffile] [-i srclistfile] [files ...]
 
 -R              Recurse directories for files.
