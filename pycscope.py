@@ -274,7 +274,12 @@ def parseFile(basepath, relpath, indexbuff, indexbuff_len, fnamesbuff):
     """
     # Open the file and get the contents
     fullpath = os.path.join(basepath, relpath)
-    f = open(fullpath, 'rU')
+    try:
+        f = open(fullpath, 'rU')
+    except IOError as e:
+        # Can't open a file, emit message and ignore
+        print("pycscope.py: %s" % e)
+        return indexbuff_len
     filecontents = f.read()
     f.close()
 
@@ -954,7 +959,10 @@ def parseSource(sourcecode, indexbuff, indexbuff_len, dump=False):
 def writeIndex(basepath, indexfn, indexbuff, fnamesbuff):
     """Write the index buffer to the output file.
     """
-    fout = open(os.path.join(basepath, indexfn), 'wb')
+    if sys.hexversion < 0x03000000:
+        fout = open(os.path.join(basepath, indexfn), 'wb')
+    else:
+        fout = open(os.path.join(basepath, indexfn), 'w', newline='\n')
 
     # Write the header and index
     index = ''.join(indexbuff)
