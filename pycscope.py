@@ -5,6 +5,7 @@ PyCscope
 PyCscope creates a Cscope-like index file for a tree of Python source.
 """
 
+from __future__ import print_function
 
 __author__ = "Dean Hall (dwhall256\x40yahoo\x2Ecom)"
 __copyright__ = "Copyright 2006 Dean Hall.  See LICENSE for details."
@@ -18,10 +19,10 @@ __usage__ = """Usage: pycscope.py [-R] [-t cnt] [-f reffile] [-i srclistfile] [f
 -f reffile      Use 'reffile' as cross-ref file name instead of 'cscope.out'.
 -i srclistfile  Use the contents of 'srclistfile' as the list of source files to scan."""
 
-
 import getopt, sys, os, os.path, string, types
-import keyword, parser, symbol, token, compiler
+import keyword, parser, symbol, token
 from threading import Lock, Thread
+
 
 class Mark(object):
     """ Marks, as defined by Cscope, that are implemented.
@@ -92,7 +93,7 @@ def main():
     try:
         opts, args = getopt.getopt(sys.argv[1:], "RSf:i:t:")
     except getopt.GetoptError:
-        print __usage__
+        print(__usage__)
         sys.exit(2)
     recurse = False
     indexfn = "cscope.out"
@@ -109,8 +110,8 @@ def main():
                 val = int(a)
                 if val > threadCount:
                     threadCount = val
-            except Exception, e:
-                print __usage__
+            except Exception as e:
+                print(__usage__)
                 sys.exit(2)
         if o == "-f":
             indexfn = a
@@ -200,8 +201,8 @@ def work(basepath, gen, lock):
     for fname in gen:
         try:
             indexbuff_len = parseFile(basepath, fname, indexbuff, indexbuff_len, fnamesbuff)
-        except SyntaxError, se:
-            print "pycscope.py: %s: %s" % (se.filename, se)
+        except SyntaxError as se:
+            print("pycscope.py: %s: %s" % (se.filename, se))
             pass
 
     return indexbuff, fnamesbuff
@@ -223,8 +224,8 @@ def workT(basepath, gen, lock):
         lock.release()
         try:
             indexbuff_len = parseFile(basepath, fname, indexbuff, indexbuff_len, fnamesbuff)
-        except SyntaxError, se:
-            print "pycscope.py: %s: %s" % (se.filename, se)
+        except SyntaxError as se:
+            print("pycscope.py: %s: %s" % (se.filename, se))
             pass
         lock.acquire()
     lock.release()
@@ -286,7 +287,7 @@ def parseFile(basepath, relpath, indexbuff, indexbuff_len, fnamesbuff):
     if filecontents:
         try:
             indexbuff_len = parseSource(filecontents, indexbuff, indexbuff_len)
-        except SyntaxError, se:
+        except SyntaxError as se:
             se.filename = fullpath
             raise se
 
@@ -356,7 +357,7 @@ class Symbol(object):
         elif name == '_test_name':
             return self.__name
         else:
-            print "Symbol(): does not have attribute <%s>" % name
+            print("Symbol(): does not have attribute <%s>" % name)
             raise AttributeError(name)
 
     def __coerce__(self, other):
@@ -871,7 +872,7 @@ def walkCst(ctx, cst):
     while stack:
         cst, indent = stack.pop()
 
-        #print "%s%s" % (" " * indent, nodeNames[cst[0]])
+        #print("%s%s" % (" " * indent, nodeNames[cst[0]]))
         processCst(ctx, cst)
 
         indented = False
