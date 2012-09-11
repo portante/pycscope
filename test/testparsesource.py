@@ -265,6 +265,18 @@ class TestParseSource(unittest.TestCase):
                      " *= 6",
                      ""])
 
+    def testAugmentedAssignmentYield(self,):
+        self.verify(["a += yield 4",
+                     "b *= yield 6"],
+                    ["1 ",
+                     "\t=a",
+                     " += yield 4",
+                     "",
+                     "2 ",
+                     "\t=b",
+                     " *= yield 6",
+                     ""])
+
     def testExtendedAssignment(self,):
         self.verify(["a = \\",
                      "b = c = d = e = f = g = 6"],

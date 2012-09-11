@@ -268,7 +268,7 @@ def parseDir(basepath, relpath, recurse):
                 yield os.path.join(relpath, name)
 
 
-def parseFile(basepath, relpath, indexbuff, indexbuff_len, fnamesbuff):
+def parseFile(basepath, relpath, indexbuff, indexbuff_len, fnamesbuff, dump=False):
     """Parses a source file and puts the resulting index into the buffer.
        Caller is required to provide synchronization.
     """
@@ -291,7 +291,7 @@ def parseFile(basepath, relpath, indexbuff, indexbuff_len, fnamesbuff):
     # Add path info to any syntax errors in the source files
     if filecontents:
         try:
-            indexbuff_len = parseSource(filecontents, indexbuff, indexbuff_len)
+            indexbuff_len = parseSource(filecontents, indexbuff, indexbuff_len, dump)
         except (SyntaxError, AssertionError) as e:
             e.filename = fullpath
             raise e
@@ -719,7 +719,7 @@ def processNonTerminal(ctx, cst):
         #   testlist, EQUAL, testlist [, EQUAL, testlist, ...]
         l = len(cst)
         if (l >= 4) and (cst[1][0] == symbol.testlist):
-            if (cst[2][0] == symbol.augassign) and (cst[3][0] == symbol.testlist):
+            if (cst[2][0] == symbol.augassign) and (cst[3][0] in (symbol.testlist, symbol.yield_expr)):
                 # testlist, augassign, testlist
                 assert (ctx.mark == '' and ctx.equal_cnt == 0 and ctx.assigned_cnt == 0), \
                         "Nested augmented assignment statement (mark: %s, equal_cnt: %d, assigned_cnt: %d)?" \
