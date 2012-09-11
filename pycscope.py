@@ -201,8 +201,8 @@ def work(basepath, gen, lock):
     for fname in gen:
         try:
             indexbuff_len = parseFile(basepath, fname, indexbuff, indexbuff_len, fnamesbuff)
-        except SyntaxError as se:
-            print("pycscope.py: %s: %s" % (se.filename, se))
+        except (SyntaxError, AssertionError) as e:
+            print("pycscope.py: %s: Line %s: %s" % (e.filename, e.lineno, e))
             pass
 
     return indexbuff, fnamesbuff
@@ -224,8 +224,8 @@ def workT(basepath, gen, lock):
         lock.release()
         try:
             indexbuff_len = parseFile(basepath, fname, indexbuff, indexbuff_len, fnamesbuff)
-        except SyntaxError as se:
-            print("pycscope.py: %s: %s" % (se.filename, se))
+        except (SyntaxError, AssertionError) as e:
+            print("pycscope.py: %s, Line %s: %s" % (e.filename, e.lineno, e))
             pass
         lock.acquire()
     lock.release()
@@ -287,9 +287,9 @@ def parseFile(basepath, relpath, indexbuff, indexbuff_len, fnamesbuff):
     if filecontents:
         try:
             indexbuff_len = parseSource(filecontents, indexbuff, indexbuff_len)
-        except SyntaxError as se:
-            se.filename = fullpath
-            raise se
+        except (SyntaxError, AssertionError) as e:
+            e.filename = fullpath
+            raise e
 
     return indexbuff_len
 
@@ -729,6 +729,9 @@ def processTerminal(ctx, cst):
     """
     global kwlist
 
+    # Remember on what line this terminal symbol ended
+    lineno = int(cst[2])
+
     if cst[0] == token.DEDENT:
         # Indentation is not recorded, but still processed. A
         # dedent is handled before we process any line number
@@ -738,10 +741,8 @@ def processTerminal(ctx, cst):
         if ctx.indent_lvl == ctx.func_def_lvl:
             ctx.func_def_lvl = -1
             ctx.line += Symbol('', Mark.FUNC_END)
-        return
+        return lineno
 
-    # Remember on what line this terminal symbol ended
-    lineno = int(cst[2])
     if (lineno != ctx.line.lineno) and (cst[0] != token.STRING):
         # Handle a token on a new line without seeing a NEWLINE
         # token (line continuation with backslash). Skip this for
@@ -856,34 +857,37 @@ def processTerminal(ctx, cst):
         # All other tokens are simply added to the line
         ctx.line += NonSymbol(cst[1])
 
-def processCst(ctx, cst):
-    """ Process a given CST tuple
-    """
-    if token.ISNONTERMINAL(cst[0]):
-        processNonTerminal(ctx, cst)
-    else:
-        processTerminal(ctx, cst)
+    return lineno
 
 def walkCst(ctx, cst):
     """ Scan the CST (tuple) for tokens, appending index lines to the buffer.
     """
     indent = 0
+    lineno = 1
     stack = [(cst, indent)]
-    while stack:
-        cst, indent = stack.pop()
+    try:
+        while stack:
+            cst, indent = stack.pop()
 
-        #print("%s%s" % (" " * indent, nodeNames[cst[0]]))
-        processCst(ctx, cst)
+            #print("%5d%s%s" % (lineno, " " * indent, nodeNames[cst[0]]))
 
-        indented = False
-        for i in range(len(cst)-1, 0, -1):
-            if type(cst[i]) == types.TupleType:
-                # Push it onto the processing stack
-                # Mirrors a recursive solution
-                if not indented:
-                    indent += 2
-                    indented = True
-                stack.append((cst[i], indent))
+            if token.ISNONTERMINAL(cst[0]):
+                processNonTerminal(ctx, cst) 
+            else:
+                lineno = processTerminal(ctx, cst)
+
+            indented = False
+            for i in range(len(cst)-1, 0, -1):
+                if type(cst[i]) == types.TupleType:
+                    # Push it onto the processing stack
+                    # Mirrors a recursive solution
+                    if not indented:
+                        indent += 2
+                        indented = True
+                    stack.append((cst[i], indent))
+    except Exception as e:
+        e.lineno = lineno
+        raise e
 
 def parseSource(sourcecode, indexbuff, indexbuff_len):
     """Parses python source code and puts the resulting index information into the buffer.
