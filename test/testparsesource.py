@@ -3,7 +3,7 @@
 """
 
 import unittest
-from pycscope import parseSource, Line, Symbol, NonSymbol, Mark
+from pycscope import parseSource, Line, Symbol, NonSymbol, Mark, debug
 
 class TestMark(unittest.TestCase):
     """ Verify the Mark class.
@@ -188,7 +188,7 @@ class TestParseSource(unittest.TestCase):
     def setUp(self,):
         self.buf = []
 
-    def verify(self, src, exp):
+    def verify(self, src, exp, dump=False):
         ''' Run the verification of a source value against an expected output
             value. The values are list of strings, each string representing an
             individual line. An empty list is interpretted as an empty
@@ -205,7 +205,7 @@ class TestParseSource(unittest.TestCase):
         expStr = "\n".join(exp)
         if exp:
             expStr += "\n"
-        l = parseSource(srcStr, self.buf, 0)
+        l = parseSource(srcStr, self.buf, 0, dump)
         self.assertEqual(l, len(self.buf))
         output = "".join(self.buf)
         #print "\nVerifying: \n\tfrom: %r\n%r\n\tmatches\n%r" % (srcStr, output, expStr)
@@ -230,6 +230,27 @@ class TestParseSource(unittest.TestCase):
                      "2 ",
                      "\t=b",
                      " = 6",
+                     ""])
+
+    def testComplexAssignment(self,):
+        # Verify we can handle complex assignment statements.
+        self.verify(["a = 4",
+                     "b = { 1, 2, (a, b), z[{'a':x[(1,)]}] }"],
+                    ["1 ",
+                     "\t=a",
+                     " = 4",
+                     "",
+                     "2 ",
+                     "\t=b",
+                     " = { 1 , 2 , ( ",
+                     "a",
+                     " , ",
+                     "b",
+                     " ) , ",
+                     "z",
+                     " [ { 'a' : ",
+                     "x",
+                     " [ ( 1 , ) ] } ] }", 
                      ""])
 
     def testAugmentedAssignment(self,):
@@ -287,10 +308,89 @@ class TestParseSource(unittest.TestCase):
                      ""])
 
     def testTupleAssignment2(self,):
+        self.verify(["a[1],b = 4, 2"],
+                    ["1 ",
+                     "\t=a",
+                     " [ 1 ] , ",
+                     "\t=b",
+                     " = 4 , 2",
+                     ""])
+
+    def testTupleAssignment3(self,):
+        self.verify(["a[foo(a,)],b = 4, 2"],
+                    ["1 ",
+                     "\t=a",
+                     " [ ",
+                     "\t`foo",
+                     " ( ",
+                     "a",
+                     " , ) ] , ",
+                     "\t=b",
+                     " = 4 , 2",
+                     ""])
+
+    def testTupleAssignment4(self,):
+        self.verify(["a[k.foo(a,c)],b = 4, 2"],
+                    ["1 ",
+                     "\t=a",
+                     " [ ",
+                     "k",
+                     " . ",
+                     "\t`foo",
+                     " ( ",
+                     "a",
+                     " , ",
+                     "c",
+                     " ) ] , ",
+                     "\t=b",
+                     " = 4 , 2",
+                     ""])
+
+    def testTupleAssignmentParen1(self,):
         self.verify(["(a,b) = tup"],
                     ["1 ( ",
                      "\t=a",
                      " , ",
+                     "\t=b",
+                     " ) = ",
+                     "tup",
+                     ""])
+
+    def testTupleAssignmentParen2(self,):
+        self.verify(["(a[foo(1,2)],b) = tup"],
+                    ["1 ( ",
+                     "\t=a",
+                     " [ ",
+                     "\t`foo",
+                     " ( 1 , 2 ) ] , ",
+                     "\t=b",
+                     " ) = ",
+                     "tup",
+                     ""])
+
+    def testTupleAssignmentParen3(self,):
+        self.verify(["(a[z.foo(1,2)],b) = tup"],
+                    ["1 ( ",
+                     "\t=a",
+                     " [ ",
+                     "z",
+                     " . ",
+                     "\t`foo",
+                     " ( 1 , 2 ) ] , ",
+                     "\t=b",
+                     " ) = ",
+                     "tup",
+                     ""])
+
+    def testTupleAssignmentParen4(self,):
+        self.verify(["(a[z.foo(1,(2,3),{1,{2,3}})],b) = tup"],
+                    ["1 ( ",
+                     "\t=a",
+                     " [ ",
+                     "z",
+                     " . ",
+                     "\t`foo",
+                     " ( 1 , ( 2 , 3 ) , { 1 , { 2 , 3 } } ) ] , ",
                      "\t=b",
                      " ) = ",
                      "tup",

@@ -541,6 +541,8 @@ class Context(object):
         self.assigned_cnt = 0       # Number of assignments taken place
         self.import_cnt = 0         # Number of import statements to expect
         self.import_name = False    # Handling an import ... statement (not from ... import ...)
+        self.in_trailer = None
+        self.spb_lvl = { token.LSQB: 0, token.LPAR: 0, token.LBRACE: 0 }
 
     def setMark(self, tup, mark):
         ''' Add a mark to the dictionary for the given tuple
@@ -586,7 +588,7 @@ def isNamedFuncCall(cst):
             and (cst[2][1][0] == token.LPAR) \
             and (cst[2][-1][0] == token.RPAR)
 
-def isTrailorFuncCall(cst):
+def isTrailerFuncCall(cst):
     """ Figure out if this CST sub-tree represents a trailer name function
         call; that is, one which looks like name.name(), or
         name.name(arg,arg=1).
@@ -600,6 +602,21 @@ def isTrailorFuncCall(cst):
             and (cst[-1][0] == symbol.trailer) \
             and (cst[-1][1][0] == token.LPAR) \
             and (cst[-1][-1][0] == token.RPAR)
+
+def isTrailerArrayRef(cst):
+    """ Figure out if this CST sub-tree represents a trailer name array
+        reference; that is, one which looks like name[...].
+    """
+    if len(cst) < 3:
+        return False
+
+    return (cst[1][0] == symbol.atom) \
+            and (cst[1][1][0] == token.NAME) \
+            and (cst[2][0] == symbol.trailer) \
+            and (cst[2][1][0] == token.LSQB) \
+            and (cst[2][-1][0] == token.RSQB)
+
+lmap = { token.RSQB: token.LSQB, token.RPAR: token.LPAR, token.RBRACE: token.LBRACE }
 
 def processNonTerminal(ctx, cst):
     """ Process a given CST tuple representing a non-terminal symbol
@@ -696,15 +713,15 @@ def processNonTerminal(ctx, cst):
         # Look for assignment statements
         #   testlist, EQUAL, testlist [, EQUAL, testlist, ...]
         l = len(cst)
-        if (l >= 4):
-            if (cst[1][0] == symbol.testlist) and (cst[2][0] == symbol.augassign) and (cst[3][0] == symbol.testlist):
+        if (l >= 4) and (cst[1][0] == symbol.testlist):
+            if (cst[2][0] == symbol.augassign) and (cst[3][0] == symbol.testlist):
                 # testlist, augassign, testlist
                 assert (ctx.mark == '' and ctx.equal_cnt == 0 and ctx.assigned_cnt == 0), \
                         "Nested augmented assignment statement (mark: %s, equal_cnt: %d, assigned_cnt: %d)?" \
                         % (ctx.mark, ctx.equal_cnt, ctx.assigned_cnt)
                 ctx.mark = Mark.ASSIGN
                 ctx.equal_cnt = ctx.assigned_cnt = 1
-            elif (cst[1][0] == symbol.testlist) and (cst[2][0] == token.EQUAL):
+            elif (cst[2][0] == token.EQUAL):
                 # testlist, EQUAL, ...
                 assert (ctx.mark == '' and ctx.equal_cnt == 0 and ctx.assigned_cnt == 0), \
                         "Nested assignment statement (mark: %s, equal_cnt: %d, assigned_cnt: %d)?" \
@@ -725,10 +742,17 @@ def processNonTerminal(ctx, cst):
         if isNamedFuncCall(cst):
             # Simple named functional call like: name() or name(a,b=1,c)
             ctx.setMark(cst[1][1], Mark.FUNC_CALL)
-        if isTrailorFuncCall(cst):
+            # Suspend COMMA processing in trailers
+            ctx.in_trailer = ctx.spb_lvl[token.LPAR];
+        elif isTrailerArrayRef(cst):
+            # Suspend COMMA processing in trailers
+            ctx.in_trailer = ctx.spb_lvl[token.LSQB];
+        if isTrailerFuncCall(cst):
             # Handle named function calls like: name.name() or
             # name.name(a,b=1,c)
             ctx.setMark(cst[-2][2], Mark.FUNC_CALL)
+            # Suspend COMMA processing in trailers
+            ctx.in_trailer = ctx.spb_lvl[token.LPAR];
 
 def processTerminal(ctx, cst):
     """ Process a given CST tuple representing a terminal symbol
@@ -811,7 +835,7 @@ def processTerminal(ctx, cst):
         # comma which means the symbol following is also being assigned
         # to, so we need to bump the assigned count back up to properly
         # handle that below.
-        if ctx.mark == Mark.ASSIGN:
+        if (ctx.in_trailer == None) and (ctx.mark == Mark.ASSIGN):
             assert ctx.equal_cnt > 0, "Comma encountered, but assignment marker in place without an equal count"
             assert (ctx.assigned_cnt + 1) == ctx.equal_cnt, "Comma encountered, but an assignment has not already taken place"
             ctx.assigned_cnt += 1
@@ -855,6 +879,15 @@ def processTerminal(ctx, cst):
         else:
             # Add the "." as a non-symbol.
             ctx.line += NonSymbol(cst[1])
+    elif cst[0] in (token.LSQB, token.LPAR, token.LBRACE):
+        ctx.line += NonSymbol(cst[1])
+        ctx.spb_lvl[cst[0]] += 1
+    elif cst[0] in (token.RSQB, token.RPAR, token.RBRACE):
+        ctx.line += NonSymbol(cst[1])
+        ctx.spb_lvl[lmap[cst[0]]] -= 1
+        if ctx.spb_lvl[lmap[cst[0]]] == ctx.in_trailer:
+            # We have left the trailer
+            ctx.in_trailer = None
     elif token.ISEOF(cst[0]):
         # End of compilation: consume this token without adding it
         # to the line, committing any line being processed.
@@ -895,7 +928,7 @@ def walkCst(ctx, cst):
         e.lineno = lineno
         raise e
 
-def parseSource(sourcecode, indexbuff, indexbuff_len):
+def parseSource(sourcecode, indexbuff, indexbuff_len, dump=False):
     """Parses python source code and puts the resulting index information into the buffer.
     """
     if len(sourcecode) == 0:
@@ -907,8 +940,8 @@ def parseSource(sourcecode, indexbuff, indexbuff_len):
         # We need to make sure files are terminated by a newline.
         sourcecode += '\n'
     cst = parser.suite(sourcecode)
-    global debug
-    if debug:
+
+    if dump:
         dumpCst(cst)
 
     ctx = Context()
