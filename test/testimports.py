@@ -5,6 +5,12 @@
 import unittest
 import os
 import pycscope
+import sys
+
+if sys.hexversion < 0x03000000:
+    ellipsis_str = ". . ."
+else:
+    ellipsis_str = "..."
 
 
 class TestImports(unittest.TestCase):
@@ -12,7 +18,7 @@ class TestImports(unittest.TestCase):
     def setUp(self,):
         self.buf = []
         self.fnbuf = []
-
+        self.maxDiff = None
 
     def testimports(self,):
         cwd = os.getcwd()
@@ -161,8 +167,8 @@ class TestImports(unittest.TestCase):
                          " import \n"
                          "xyz\n"
                          "\n"
-                         "25 from . . . \n"
+                         "25 from %s \n"
                          "\t~abc\n"
                          " import \n"
                          "xyz\n"
-                         "\n")
+                         "\n" % ellipsis_str)

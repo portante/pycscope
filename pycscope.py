@@ -518,6 +518,13 @@ class Line(object):
         """
         return NotImplemented
 
+if sys.hexversion < 0x03000000:
+    valid_tokens_for_marks = (token.NAME, token.DOT)
+    valid_tokens_for_import = (token.DOT,)
+else:
+    valid_tokens_for_marks = (token.NAME, token.DOT, token.ELLIPSIS)
+    valid_tokens_for_import = (token.DOT, token.ELLIPSIS)
+
 class Context(object):
     ''' Object representing the context for understanding the concrete syntax
         tree (CST) during one single pass.
@@ -554,7 +561,7 @@ class Context(object):
         '''
         idx = id(tup)
         assert idx not in self.marks
-        assert tup[0] in (token.NAME, token.DOT)
+        assert tup[0] in valid_tokens_for_marks, "Expected one of %s, found %s" % ([token.tok_name[t] for t in valid_tokens_for_marks], tup)
         self.marks[idx] = mark
 
     def getMark(self, tup):
@@ -623,6 +630,11 @@ def isTrailerArrayRef(cst):
 
 lmap = { token.RSQB: token.LSQB, token.RPAR: token.LPAR, token.RBRACE: token.LBRACE }
 
+if sys.hexversion < 0x03000000:
+    tse = symbol.testlist
+else:
+    tse = symbol.testlist_star_expr
+
 def processNonTerminal(ctx, cst):
     """ Process a given CST tuple representing a non-terminal symbol
     """
@@ -684,7 +696,7 @@ def processNonTerminal(ctx, cst):
         # as an include. As they are added to the line they'll be merged into
         # one big symbol marked as an include.
         dnidx = 2
-        while cst[dnidx][0] == token.DOT:
+        while cst[dnidx][0] in valid_tokens_for_import:
             dnidx += 1
         for i in range(1, len(cst[dnidx])):
             ctx.setMark(cst[dnidx][i], Mark.INCLUDE)
@@ -716,18 +728,17 @@ def processNonTerminal(ctx, cst):
                 ctx.import_name = False
     elif cst[0] == symbol.expr_stmt:
         # Look for assignment statements
-        #   testlist, EQUAL, testlist [, EQUAL, testlist, ...]
         l = len(cst)
-        if (l >= 4) and (cst[1][0] == symbol.testlist):
+        if (l >= 4) and (cst[1][0] == tse):
             if (cst[2][0] == symbol.augassign) and (cst[3][0] in (symbol.testlist, symbol.yield_expr)):
-                # testlist, augassign, testlist
+                # testlist or testlist_star_expr, augassign, testlist
                 assert (ctx.mark == '' and ctx.equal_cnt == 0 and ctx.assigned_cnt == 0), \
                         "Nested augmented assignment statement (mark: %s, equal_cnt: %d, assigned_cnt: %d)?" \
                         % (ctx.mark, ctx.equal_cnt, ctx.assigned_cnt)
                 ctx.mark = Mark.ASSIGN
                 ctx.equal_cnt = ctx.assigned_cnt = 1
             elif (cst[2][0] == token.EQUAL):
-                # testlist, EQUAL, ...
+                # testlist or testlist_star_expr, EQUAL, ...
                 assert (ctx.mark == '' and ctx.equal_cnt == 0 and ctx.assigned_cnt == 0), \
                         "Nested assignment statement (mark: %s, equal_cnt: %d, assigned_cnt: %d)?" \
                         % (ctx.mark, ctx.equal_cnt, ctx.assigned_cnt)
@@ -737,7 +748,7 @@ def processNonTerminal(ctx, cst):
                     if cst[i][0] == token.EQUAL:
                         ctx.equal_cnt += 1
                     else:
-                        assert cst[i][0] == symbol.testlist, "Bad form: "
+                        assert cst[i][0] == tse, "Bad form: expected %s" % tse
                 ctx.assigned_cnt = ctx.equal_cnt
     elif cst[0] == symbol.classdef:
         # Handle class declarations.
