@@ -19,7 +19,7 @@ __usage__ = """Usage: pycscope.py [-R] [-t cnt] [-f reffile] [-i srclistfile] [f
 -f reffile      Use 'reffile' as cross-ref file name instead of 'cscope.out'.
 -i srclistfile  Use the contents of 'srclistfile' as the list of source files to scan."""
 
-import getopt, sys, os, os.path, string, types
+import getopt, sys, os, os.path, string
 import keyword, parser, symbol, token
 from threading import Lock, Thread
 
@@ -116,7 +116,7 @@ def main():
         if o == "-f":
             indexfn = a
         if o == "-i":
-            args.extend(map(string.rstrip, open(a, 'r').readlines()))
+            args.extend(list(map(string.rstrip, open(a, 'r').readlines())))
 
     # Search current dir by default
     if len(args) == 0:
@@ -307,7 +307,7 @@ def replaceNodeType(treeList):
 
     # Recurse
     for i in range(1, len(treeList)):
-        if type(treeList[i]) == types.ListType:
+        if type(treeList[i]) == list:
             replaceNodeType(treeList[i])
     return treeList
 
@@ -323,7 +323,7 @@ class Symbol(object):
     def __init__(self, name, mark=None):
         """ Constructor, which ensures an actual name ("string") is given.
         """
-        assert (mark == Mark.FUNC_END or name) and (type(name) == types.StringType), "Must have an actual symbol name as a string (unless marking function end)."
+        assert (mark == Mark.FUNC_END or name) and (type(name) == str), "Must have an actual symbol name as a string (unless marking function end)."
 
         self.__mark = Mark(mark)
         self.__name = name
@@ -373,6 +373,12 @@ class Symbol(object):
         """
         return True
 
+    def __bool__(self):
+        """ Defined so that the interpretter won't invoke
+            __getattr__() to try to find it.
+        """
+        return True
+
     def hasMark(self, mark):
         """ Does this symbol have a given mark?
         """
@@ -384,7 +390,7 @@ class NonSymbol(object):
     def __init__(self, val):
         """ Constructor, whatever we are given we'll store it as a string.
         """
-        assert val and (type(val) == types.StringType), "Must have an actual string."
+        assert val and (type(val) == str), "Must have an actual string."
         self.__text = str(val)
 
     def __add__(self, other):
@@ -407,7 +413,7 @@ class NonSymbol(object):
 
 class Line(object):
     def __init__(self, num):
-        assert ((type(num) == types.IntType) or (type(num) == types.LongType)) and num > 0, "Requires a positive, non-zero integer for a line number"
+        assert ((type(num) == int) or (type(num) == long)) and num > 0, "Requires a positive, non-zero integer for a line number"
         self.lineno = num
         self.__contents = []	# List of Symbol and NonSymbol objects
         self.__hasSymbol = False
@@ -878,7 +884,7 @@ def walkCst(ctx, cst):
 
             indented = False
             for i in range(len(cst)-1, 0, -1):
-                if type(cst[i]) == types.TupleType:
+                if type(cst[i]) == tuple:
                     # Push it onto the processing stack
                     # Mirrors a recursive solution
                     if not indented:
@@ -896,7 +902,7 @@ def parseSource(sourcecode, indexbuff, indexbuff_len):
         return indexbuff_len
 
     # Parse the source to an Abstract Syntax Tree
-    sourcecode = string.replace(sourcecode, '\r\n', '\n')
+    sourcecode = sourcecode.replace('\r\n', '\n')
     if sourcecode[-1] != '\n':
         # We need to make sure files are terminated by a newline.
         sourcecode += '\n'
