@@ -4,9 +4,9 @@ PyCscope
 
 :Copyright: Copyright 2006 Dean Hall.  See License_ for details.
 :Author: Dean Hall
-:Release: 0.3
+:Release: 0.3b-pajp
 :Date: 2007/12/25
-
+:Modified: 2012/09/11
 
 Purpose
 -------
@@ -70,6 +70,7 @@ PyCscope has the following features:
     - Marks for function calls (algorithm is not perfect)
     - Marks for end-of-function (no search uses this mark yet)
     - Marks for imported modules (use the search for #include)
+    - Marks for symbol assignment
 
 A *mark* is an indicator to the cscope utility that something
 of interest follows.
@@ -85,42 +86,68 @@ by the `CscopeFinder` plugin for jEdit.  Other editors are not tested.
 Release Notes
 -------------
 
-This is PyCscope release 0.2
+This is PyCscope release 0.3b-pajp
 
-==========  ======= ======  ====================================================
-Date        Release Trac    Changes
-==========  ======= ======  ====================================================
-2007/12/25  0.3     N/A     Included changes submitted by K. Rader of Google:
-                            - Added the `-i` argument to specify a file-list 
-                              file
-                            - Fixups to the header and footer to make a valid 
-                              file that cscope can read
-----------  ------- ------  ----------------------------------------------------
-2006/08/12  0.2     #33     Create 0.2 release.
+==========  ========= ======  ====================================================
+Date        Release   Trac    Changes
+==========  ========= ======  ====================================================
+2012/09/11  0.3b-pajp N/A     Include changes from fspeech to get it working for
+                              Python 3; add proper support for yield expression
+                              following an augmented assignment; added support
+                              for filename and line numbers when assertions fire;
+                              fixed handling of commas on the left hand side of
+                              assignment statements; gracefully handle errors
+                              opening files.
+                              GitHub issues: #5
+----------  --------- ------  ----------------------------------------------------
+2012/04/29  0.3a-pajp N/A     (NOTE: Failed to update version!)
+                              Fix handling of DOS style line endings.
+                              GitHub issues: #4
+----------  --------- ------  ----------------------------------------------------
+2012/04/13  0.3a-pajp N/A     (NOTE: Failed to update version!)
+                              Fix handling of function definition decorators
+                              GitHub issues: #2, #3
+----------  --------- ------  ----------------------------------------------------
+2012/03/11  0.3a-pajp N/A     (NOTE: Failed to update version!)
+                              Change references from abstract syntax tree to
+                              concrete syntax tree; fix handling of trailing
+                              commas.
+----------  --------- ------  ----------------------------------------------------
+2012/03/05  0.3a-pajp N/A     Updated changes to support symbol assignment,
+                              enhance unit test coverage, prepare code for PyCon
+                              poster session.
+----------  --------- ------  ----------------------------------------------------
+2007/12/25  0.3       N/A     Included changes submitted by K. Rader of Google:
+                              - Added the `-i` argument to specify a file-list 
+                                file
+                              - Fixups to the header and footer to make a valid 
+                                file that cscope can read
+----------  --------- ------  ----------------------------------------------------
+2006/08/12  0.2       #33     Create 0.2 release.
 
-                    #34     Change all "pyscope" to "pycscope"
+                      #34     Change all "pyscope" to "pycscope"
 
-                    #29     Make error reports less vague.
+                      #29     Make error reports less vague.
 
-                    #23     Create distutils files.
+                      #23     Create distutils files.
 
-                    #20     Create unit tests.
+                      #20     Create unit tests.
 
-----------  ------- ------  ----------------------------------------------------
-2006/08/02  0.1     None    Released to interested party by
-                            email.
+----------  --------- ------  ----------------------------------------------------
+2006/08/02  0.1       None    Released to interested party by
+                              email.
 
-                    #19     Observe newlines even without
-                            NEWLINE token.
+                      #19     Observe newlines even without
+                              NEWLINE token.
 
-                    #18     Newlines before MARK_FILE causes
-                            exception.
+                      #18     Newlines before MARK_FILE causes
+                              exception.
 
-                    #16     Work on "." default directory.
+                      #16     Work on "." default directory.
 
-                    #10     Exception: TypeError in format.
+                      #10     Exception: TypeError in format.
 
-                    #8      Class mark is incorrect.
+                       #8     Class mark is incorrect.
 
-                    #6      Create project space.
-==========  ======= ======  ====================================================
+                       #6     Create project space.
+==========  ========= ======  ====================================================
