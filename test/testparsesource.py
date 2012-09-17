@@ -253,6 +253,21 @@ class TestParseSource(unittest.TestCase):
                      " [ ( 1 , ) ] } ] }", 
                      ""])
 
+    def testTrailerAssignment(self,):
+        # Verify we can handle assignment statements with lhs trailers. See
+        # issue #6 at http://github.com/portante/pycscope/issues/6.
+        self.verify(["x.get(0, 'sth', c=True).text = 'ok'"],
+                    ["1 ",
+                     "\t=x",
+                     " . ",
+                     "\t`get",
+                     " ( 0 , 'sth' , ",
+                     "c",
+                     " = True ) . ",
+                     "text",
+                     " = 'ok'",
+                     ""])
+
     def testAugmentedAssignment(self,):
         self.verify(["a += 4",
                      "b *= 6"],
