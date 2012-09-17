@@ -587,11 +587,11 @@ class Context(object):
         else:
             self.line = None
 
-def isNamedFuncCall(cst):
+def isNamedFuncCall(cst, cst_len):
     """ Figure out if this CST sub-tree represents a named function call;
         that is, one which looks like name(), or name(arg,arg=1).
     """
-    if len(cst) < 3:
+    if cst_len < 3:
         return False
 
     return (cst[1][0] == symbol.atom) \
@@ -600,12 +600,12 @@ def isNamedFuncCall(cst):
             and (cst[2][1][0] == token.LPAR) \
             and (cst[2][-1][0] == token.RPAR)
 
-def isTrailerFuncCall(cst):
+def isTrailerFuncCall(cst, cst_len):
     """ Figure out if this CST sub-tree represents a trailer name function
         call; that is, one which looks like name.name(), or
         name.name(arg,arg=1).
     """
-    if len(cst) < 4:
+    if cst_len < 4:
         return False
 
     return (cst[-2][0] == symbol.trailer) \
@@ -615,11 +615,11 @@ def isTrailerFuncCall(cst):
             and (cst[-1][1][0] == token.LPAR) \
             and (cst[-1][-1][0] == token.RPAR)
 
-def isTrailerArrayRef(cst):
+def isTrailerArrayRef(cst, cst_len):
     """ Figure out if this CST sub-tree represents a trailer name array
         reference; that is, one which looks like name[...].
     """
-    if len(cst) < 3:
+    if cst_len < 3:
         return False
 
     return (cst[1][0] == symbol.atom) \
@@ -756,15 +756,16 @@ def processNonTerminal(ctx, cst):
         assert (cst[1][0] == token.NAME) and (cst[1][1] == 'class')
         ctx.setMark(cst[2], Mark.CLASS)
     elif cst[0] == symbol.power:
-        if isNamedFuncCall(cst):
+        l = len(cst)
+        if isNamedFuncCall(cst, l):
             # Simple named functional call like: name() or name(a,b=1,c)
             ctx.setMark(cst[1][1], Mark.FUNC_CALL)
             # Suspend COMMA processing in trailers
             ctx.in_trailer = ctx.spb_lvl[token.LPAR]
-        elif isTrailerArrayRef(cst):
+        elif isTrailerArrayRef(cst, l):
             # Suspend COMMA processing in trailers
             ctx.in_trailer = ctx.spb_lvl[token.LSQB]
-        if isTrailerFuncCall(cst):
+        if isTrailerFuncCall(cst, l):
             # Handle named function calls like: name.name() or
             # name.name(a,b=1,c)
             ctx.setMark(cst[-2][2], Mark.FUNC_CALL)
