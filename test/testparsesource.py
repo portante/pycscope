@@ -759,7 +759,7 @@ class TestParseSource(unittest.TestCase):
                      " ( ) . ",
                      "\t`foo",
                      " ( )",
-                     ""], dump=True)
+                     ""])
 
     def testFuncCallSimpleChainedWithArgs(self,):
         self.verify(["main()()().foo(a,b=2)"],
