@@ -729,7 +729,8 @@ def processNonTerminal(ctx, cst):
     elif cst[0] == symbol.expr_stmt:
         # Look for assignment statements
         l = len(cst)
-        if (l >= 4) and (cst[1][0] == tse):
+        if (l >= 4):
+            assert (cst[1][0] == tse)
             if (cst[2][0] == symbol.augassign) and (cst[3][0] in (symbol.testlist, symbol.yield_expr)):
                 # testlist or testlist_star_expr, augassign, testlist
                 assert (ctx.mark == '' and ctx.equal_cnt == 0 and ctx.assigned_cnt == 0), \
