@@ -600,6 +600,19 @@ def isNamedFuncCall(cst, cst_len):
             and (cst[2][1][0] == token.LPAR) \
             and (cst[2][-1][0] == token.RPAR)
 
+def isNamedTrailerArrayRef(cst, cst_len):
+    """ Figure out if this CST sub-tree represents a trailer name array
+        reference; that is, one which looks like name[...].
+    """
+    if cst_len < 3:
+        return False
+
+    return (cst[1][0] == symbol.atom) \
+            and (cst[1][1][0] == token.NAME) \
+            and (cst[2][0] == symbol.trailer) \
+            and (cst[2][1][0] == token.LSQB) \
+            and (cst[2][-1][0] == token.RSQB)
+
 def isTrailerFuncCall(cst, cst_len):
     """ Figure out if this CST sub-tree represents a trailer name function
         call; that is, one which looks like name.name(), or
@@ -614,19 +627,6 @@ def isTrailerFuncCall(cst, cst_len):
             and (cst[-1][0] == symbol.trailer) \
             and (cst[-1][1][0] == token.LPAR) \
             and (cst[-1][-1][0] == token.RPAR)
-
-def isTrailerArrayRef(cst, cst_len):
-    """ Figure out if this CST sub-tree represents a trailer name array
-        reference; that is, one which looks like name[...].
-    """
-    if cst_len < 3:
-        return False
-
-    return (cst[1][0] == symbol.atom) \
-            and (cst[1][1][0] == token.NAME) \
-            and (cst[2][0] == symbol.trailer) \
-            and (cst[2][1][0] == token.LSQB) \
-            and (cst[2][-1][0] == token.RSQB)
 
 lmap = { token.RSQB: token.LSQB, token.RPAR: token.LPAR, token.RBRACE: token.LBRACE }
 
@@ -762,7 +762,7 @@ def processNonTerminal(ctx, cst):
             ctx.setMark(cst[1][1], Mark.FUNC_CALL)
             # Suspend COMMA processing in trailers
             ctx.in_trailer = ctx.spb_lvl[token.LPAR]
-        elif isTrailerArrayRef(cst, l):
+        elif isNamedTrailerArrayRef(cst, l):
             # Suspend COMMA processing in trailers
             ctx.in_trailer = ctx.spb_lvl[token.LSQB]
         if isTrailerFuncCall(cst, l):
