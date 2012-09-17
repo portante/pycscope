@@ -736,6 +736,31 @@ class TestParseSource(unittest.TestCase):
                      " ( )",
                      ""])
 
+    def testFuncCallSimpleChainedMultiple(self,):
+        self.verify(["main.bar()[zoo()].a.b.c().e.f.g().foo()"],
+                    ["1 ",
+                     "main",
+                     " . ",
+                     "\t`bar",
+                     " ( ) [ ",
+                     "\t`zoo",
+                     " ( ) ] . ",
+                     "a",
+                     " . ",
+                     "b",
+                     " . ",
+                     "\t`c",
+                     " ( ) . ",
+                     "e",
+                     " . ",
+                     "f",
+                     " . ",
+                     "\t`g",
+                     " ( ) . ",
+                     "\t`foo",
+                     " ( )",
+                     ""], dump=True)
+
     def testFuncCallSimpleChainedWithArgs(self,):
         self.verify(["main()()().foo(a,b=2)"],
                     ["1 ",

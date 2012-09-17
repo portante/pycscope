@@ -615,21 +615,20 @@ def isNamedTrailerArrayRef(cst, cst_len):
             and (cst[2][1][0] == token.LSQB) \
             and (cst[2][-1][0] == token.RSQB)
 
-def isTrailerFuncCall(cst, cst_len):
+def isTrailerFuncCall(cst, idx, cst_len):
     """ Figure out if this CST sub-tree represents a trailer name function
         call; that is, one which looks like name.name(), or
         name.name(arg,arg=1).
     """
     assert (cst[0] == symbol.power)
-    if cst_len < 4:
-        return False
+    assert (idx < (cst_len - 1))
 
-    return (cst[-2][0] == symbol.trailer) \
-            and (cst[-2][1][0] == token.DOT) \
-            and (cst[-2][2][0] == token.NAME) \
-            and (cst[-1][0] == symbol.trailer) \
-            and (cst[-1][1][0] == token.LPAR) \
-            and (cst[-1][-1][0] == token.RPAR)
+    return (cst[idx][0] == symbol.trailer) \
+            and (cst[idx][1][0] == token.DOT) \
+            and (cst[idx][2][0] == token.NAME) \
+            and (cst[idx + 1][0] == symbol.trailer) \
+            and (cst[idx + 1][1][0] == token.LPAR) \
+            and (cst[idx + 1][-1][0] == token.RPAR)
 
 lmap = { token.RSQB: token.LSQB, token.RPAR: token.LPAR, token.RBRACE: token.LBRACE }
 
@@ -768,12 +767,13 @@ def processNonTerminal(ctx, cst):
         elif isNamedTrailerArrayRef(cst, l):
             # Suspend COMMA processing in trailers
             ctx.in_trailer = ctx.spb_lvl[token.LSQB]
-        if isTrailerFuncCall(cst, l):
-            # Handle named function calls like: name.name() or
-            # name.name(a,b=1,c)
-            ctx.setMark(cst[-2][2], Mark.FUNC_CALL)
-            # Suspend COMMA processing in trailers
-            ctx.in_trailer = ctx.spb_lvl[token.LPAR]
+        for i in range(1, l - 1):
+            if isTrailerFuncCall(cst, i, l):
+                # Handle named function calls like: name.name() or
+                # name.name(a,b=1,c)
+                ctx.setMark(cst[i][2], Mark.FUNC_CALL)
+                # Suspend COMMA processing in trailers
+                ctx.in_trailer = ctx.spb_lvl[token.LPAR]
 
 def processTerminal(ctx, cst):
     """ Process a given CST tuple representing a terminal symbol
