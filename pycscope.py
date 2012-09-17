@@ -158,7 +158,7 @@ def main():
         for t in T:
             t.join()
 
-        # Gather all the indexbuffs and fnamesbuffs 
+        # Gather all the indexbuffs and fnamesbuffs
         for i in indexBuffs:
             indexbuff += i
         for f in fnamesBuffs:
@@ -759,16 +759,16 @@ def processNonTerminal(ctx, cst):
             # Simple named functional call like: name() or name(a,b=1,c)
             ctx.setMark(cst[1][1], Mark.FUNC_CALL)
             # Suspend COMMA processing in trailers
-            ctx.in_trailer = ctx.spb_lvl[token.LPAR];
+            ctx.in_trailer = ctx.spb_lvl[token.LPAR]
         elif isTrailerArrayRef(cst):
             # Suspend COMMA processing in trailers
-            ctx.in_trailer = ctx.spb_lvl[token.LSQB];
+            ctx.in_trailer = ctx.spb_lvl[token.LSQB]
         if isTrailerFuncCall(cst):
             # Handle named function calls like: name.name() or
             # name.name(a,b=1,c)
             ctx.setMark(cst[-2][2], Mark.FUNC_CALL)
             # Suspend COMMA processing in trailers
-            ctx.in_trailer = ctx.spb_lvl[token.LPAR];
+            ctx.in_trailer = ctx.spb_lvl[token.LPAR]
 
 def processTerminal(ctx, cst):
     """ Process a given CST tuple representing a terminal symbol
@@ -927,7 +927,7 @@ def walkCst(ctx, cst):
             #print("%5d%s%s" % (lineno, " " * indent, nodeNames[cst[0]]))
 
             if token.ISNONTERMINAL(cst[0]):
-                processNonTerminal(ctx, cst) 
+                processNonTerminal(ctx, cst)
             else:
                 lineno = processTerminal(ctx, cst)
 
