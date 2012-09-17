@@ -591,6 +591,7 @@ def isNamedFuncCall(cst, cst_len):
     """ Figure out if this CST sub-tree represents a named function call;
         that is, one which looks like name(), or name(arg,arg=1).
     """
+    assert (cst[0] == symbol.power)
     if cst_len < 3:
         return False
 
@@ -604,6 +605,7 @@ def isNamedTrailerArrayRef(cst, cst_len):
     """ Figure out if this CST sub-tree represents a trailer name array
         reference; that is, one which looks like name[...].
     """
+    assert (cst[0] == symbol.power)
     if cst_len < 3:
         return False
 
@@ -618,6 +620,7 @@ def isTrailerFuncCall(cst, cst_len):
         call; that is, one which looks like name.name(), or
         name.name(arg,arg=1).
     """
+    assert (cst[0] == symbol.power)
     if cst_len < 4:
         return False
 
