@@ -4,9 +4,9 @@ PyCscope
 
 :Copyright: Copyright 2006 Dean Hall.  See License_ for details.
 :Author: Dean Hall
-:Release: 0.3c-pajp
+:Release: 0.3d-pajp
 :Date: 2007/12/25
-:Modified: 2012/09/17
+:Modified: 2012/09/18
 
 Purpose
 -------
@@ -96,6 +96,9 @@ This is PyCscope release 0.3b-pajp
 ==========  ========= ======  ====================================================
 Date        Release   Trac    Changes
 ==========  ========= ======  ====================================================
+2012/09/18  0.3d-pajp N/A     Implement debugging help from Issue #9: dumpCst now
+                              works on subtrees of tuples, not just lists.
+----------  --------- ------  ----------------------------------------------------
 2012/09/17  0.3c-pajp N/A     First pass fix of Issue #6 removing errant assertion
                               thus allowing symbol assignment marking to work as
                               coded (if not correctly, see Issue #7).
