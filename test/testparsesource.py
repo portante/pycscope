@@ -2,8 +2,10 @@
 """ Unit tests for parsing Python source into cscope index
 """
 
-import unittest
-from pycscope import parseSource, Line, Symbol, NonSymbol, Mark, debug
+import unittest, parser
+from cStringIO import StringIO
+from pycscope import parseSource, Line, Symbol, NonSymbol, Mark, dumpCst
+
 
 class TestMark(unittest.TestCase):
     """ Verify the Mark class.
@@ -62,6 +64,7 @@ class TestMark(unittest.TestCase):
         m = Mark(Mark.GLOBAL)
         self.assertEqual('\tg', str(m))
 
+
 class TestNonSymbol(unittest.TestCase):
     """ Verify the NonSymbol class.
     """
@@ -90,6 +93,7 @@ class TestNonSymbol(unittest.TestCase):
         ns = NonSymbol("that")
         ns += NonSymbol("then")
         self.assertEqual("that then", ns.format())
+
 
 class TestSymbol(unittest.TestCase):
     """ Verify the Symbol class.
@@ -141,6 +145,7 @@ class TestSymbol(unittest.TestCase):
         s = Symbol('bye', '~')
         self.assertEqual('\t~bye', s.format())
 
+
 class TestLine(unittest.TestCase):
     """ Verify the Line class.
     """
@@ -183,6 +188,7 @@ class TestLine(unittest.TestCase):
         l += NonSymbol(")")
         self.assertEqual(["117 def ", "\tgx ", "( ", "\t~y ", ") "], l)
 
+
 class TestParseSource(unittest.TestCase):
 
     def setUp(self,):
@@ -195,7 +201,7 @@ class TestParseSource(unittest.TestCase):
             file. And empty string is interpretted as an empty line.
         '''
         # We create one long string for both source and expected values so
-        # that the caller can enumerate each line with adding new lines,
+        # that the caller can enumerate each line without adding new lines,
         # making it easier to see what is being written.
         srcStr = "\n".join(src)
         if src:
@@ -205,11 +211,22 @@ class TestParseSource(unittest.TestCase):
         expStr = "\n".join(exp)
         if exp:
             expStr += "\n"
-        l = parseSource(srcStr, self.buf, 0, dump)
+        try:
+            l = parseSource(srcStr, self.buf, 0, dump)
+        except AssertionError as ae:
+            self.fail("Internal AssertionError Encountered: %s\n"
+                      "Concrete Syntax Tree:\n"
+                      "%s\n"
+                      % (ae, dumpCst(parser.suite(srcStr),StringIO()).getvalue()))
         self.assertEqual(l, len(self.buf))
         output = "".join(self.buf)
-        #print "\nVerifying: \n\tfrom: %r\n%r\n\tmatches\n%r" % (srcStr, output, expStr)
-        self.assertEqual(output, expStr)
+        self.assertEqual(output, expStr,
+                         "Output not quite what was expected:\n"
+                         "    out: %r\n"
+                         "    exp: %r\n"
+                         "Concrete Syntax Tree:\n"
+                         "%s\n"
+                         % (output, expStr, dumpCst(parser.suite(srcStr),StringIO()).getvalue()))
 
     def testEmptyCode(self,):
         # Verify we can handle an empty file.

@@ -343,6 +343,8 @@ def dumpCst(cst, stream=None):
         else:
             raise
 
+    return stream
+
 
 class Symbol(object):
     """ A representation of a what cscope considers a 'symbol'.
