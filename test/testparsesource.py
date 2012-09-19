@@ -440,6 +440,56 @@ class TestParseSource(unittest.TestCase):
                      "tup",
                      ""])
 
+    def testListAssignmentBracket1(self,):
+        self.verify(["[a,b] = tup"],
+                    ["1 [ ",
+                     "\t=a",
+                     " , ",
+                     "\t=b",
+                     " ] = ",
+                     "tup",
+                     ""])
+
+    def testListAssignmentBracket2(self,):
+        self.verify(["[a[foo(1,2)],b] = tup"],
+                    ["1 [ ",
+                     "\t=a",
+                     " [ ",
+                     "\t`foo",
+                     " ( 1 , 2 ) ] , ",
+                     "\t=b",
+                     " ] = ",
+                     "tup",
+                     ""])
+
+    def testListAssignmentBracket3(self,):
+        self.verify(["[a[z.foo(1,2)],b] = tup"],
+                    ["1 [ ",
+                     "\t=a",
+                     " [ ",
+                     "z",
+                     " . ",
+                     "\t`foo",
+                     " ( 1 , 2 ) ] , ",
+                     "\t=b",
+                     " ] = ",
+                     "tup",
+                     ""])
+
+    def testListAssignmentBracket4(self,):
+        self.verify(["[a[z.foo(1,(2,3),{1,{2,3}})],b] = tup"],
+                    ["1 [ ",
+                     "\t=a",
+                     " [ ",
+                     "z",
+                     " . ",
+                     "\t`foo",
+                     " ( 1 , ( 2 , 3 ) , { 1 , { 2 , 3 } } ) ] , ",
+                     "\t=b",
+                     " ] = ",
+                     "tup",
+                     ""])
+
     def testNestedAssignment(self,):
         # Verify we can handle crazy assignment statements.
         self.verify(["a[5] = 4",
