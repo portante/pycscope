@@ -174,6 +174,7 @@ def main(argv):
     indexbuff.append("\n%s" % Mark(Mark.FILE))
     writeIndex(basepath, indexfn, indexbuff, fnamesbuff)
 
+
 class WorkerThread(Thread):
     def __init__(self, basepath, gen, lock, indexBuffs, fnamesBuffs, debug):
         Thread.__init__(self, name="Worker")
@@ -342,6 +343,7 @@ def dumpCst(cst, stream=None):
         else:
             raise
 
+
 class Symbol(object):
     """ A representation of a what cscope considers a 'symbol'.
     """
@@ -409,6 +411,7 @@ class Symbol(object):
         """
         return self.__mark == mark
 
+
 class NonSymbol(object):
     """ A representation of a what cscope considers a 'non-symbol' text.
     """
@@ -435,6 +438,7 @@ class NonSymbol(object):
 
     def __repr__(self):
         return "<NonSymbol:%s>" % self.format()
+
 
 class Line(object):
     def __init__(self, num):
@@ -538,12 +542,14 @@ class Line(object):
         """
         return NotImplemented
 
+
 if sys.hexversion < 0x03000000:
     valid_tokens_for_marks = (token.NAME, token.DOT)
     valid_tokens_for_import = (token.DOT,)
 else:
     valid_tokens_for_marks = (token.NAME, token.DOT, token.ELLIPSIS)
     valid_tokens_for_import = (token.DOT, token.ELLIPSIS)
+
 
 class Context(object):
     ''' Object representing the context for understanding the concrete syntax
@@ -975,7 +981,7 @@ def parseSource(sourcecode, indexbuff, indexbuff_len, dump=False):
     if len(sourcecode) == 0:
         return indexbuff_len
 
-    # Parse the source to an Abstract Syntax Tree
+    # Parse the source to an Concrete Syntax Tree (cst)
     sourcecode = sourcecode.replace('\r\n', '\n')
     if sourcecode[-1] != '\n':
         # We need to make sure files are terminated by a newline.
