@@ -1,2 +1,5 @@
 include LICENSE runtests.py
+recursive-include pycscope *.py
 recursive-include test *.py
+graft doc
+graft contrib

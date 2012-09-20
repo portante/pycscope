@@ -10,10 +10,10 @@ def read(fname):
 setup (
     name = "pycscope",
     version = __version__,
-    packages = find_packages(),
+    packages = [ "pycscope", ],
     entry_points = {
         'console_scripts': [
-            'pycscope = pycscope.main',
+            'pycscope = pycscope:main',
             ],
         },
 
