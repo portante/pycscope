@@ -7,8 +7,8 @@ PyCscope creates a Cscope-like index file for a tree of Python source.
 
 from __future__ import print_function
 
-__author__ = "Dean Hall (dwhall256\x40yahoo\x2Ecom)"
-__copyright__ = "Copyright 2006 Dean Hall.  See LICENSE for details."
+__author__ = "Peter Portante (peter\x2Ea\x2Eportante\x40gmail\x2Ecom)"
+__copyright__ = "Copyright 2012 Peter Portante.  See LICENSE for details."
 __date__ = "2012/09/20"
 __version__ = "1.0"
 __usage__ = """Usage: pycscope.py [-D] [-R] [-S] [-V] [-t cnt] [-f reffile] [-i srclistfile] [files ...]

@@ -2,11 +2,10 @@
 PyCscope
 ========
 
-:Copyright: Copyright 2006 Dean Hall.  See License_ for details.
-:Author: Dean Hall
+:Copyright: Copyright 2012 Peter Portante.  See LICENSE for details.
+:Author: Peter Portante
 :Release: 1.0
-:Date: 2007/12/25
-:Modified: 2012/09/20
+:Date: 2012/09/20
 
 Purpose
 -------
@@ -35,7 +34,7 @@ Usage
 License
 -------
 
-Copyright 2006 Dean Hall.
+Copyright 2012 Peter Portante
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of version 2 of the GNU General
@@ -81,6 +80,13 @@ A *mark* is an indicator to the cscope utility that something
 of interest follows.
 
 
+History
+-------
+
+pycscope 0.3a and later are written and copyright Peter Portante.
+pycscope 0.1 - 0.3 were originally written and copyright Dean Hall.
+
+
 Status
 ------
 
@@ -96,7 +102,9 @@ This is PyCscope release 1.0
 ==========  ========= ======  ====================================================
 Date        Release   Trac    Changes
 ==========  ========= ======  ====================================================
-2012/09/20  1.0       N/A     Call it 1.0; update to use setuptools
+2012/09/20  1.0       N/A     Call it 1.0; update to use setuptools; drop .py from
+                              installed script name; transition authorship from
+                              Dean Hall to Peter Portante.
 ----------  --------- ------  ----------------------------------------------------
 2012/09/19  0.3e-pajp N/A     Fix issues #7 and #8: we now properly handle symbols
                               closest to the assignment itself (rather than the

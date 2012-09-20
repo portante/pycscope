@@ -17,8 +17,8 @@ setup (
             ],
         },
 
-    author = "Dean Hall",
-    author_email = "dwhall256\x40yahoo\x2Ecom",
+    author = "Peter Portante",
+    author_email = "peter\x2Ea\x2Eportante\x40gmail\x2Ecom",
     description = "Generates a cscope index of Python source trees",
     long_description = read('README'),
     license = "GPLv2",
