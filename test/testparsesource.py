@@ -270,19 +270,183 @@ class TestParseSource(unittest.TestCase):
                      " [ ( 1 , ) ] } ] }", 
                      ""])
 
-    def testTrailerAssignment(self,):
+    def testSimpleTrailerAssignment(self,):
+        # Verify we can handle assignment statements with lhs trailers. See
+        # issue #6 at http://github.com/portante/pycscope/issues/6.
+        self.verify(["x.text = 'ok'"],
+                    ["1 ",
+                     "x",
+                     " . ",
+                     "\t=text",
+                     " = 'ok'",
+                     ""])
+
+    def testSimplerTrailerAssignment(self,):
+        # Verify we can handle assignment statements with lhs trailers. See
+        # issue #6 at http://github.com/portante/pycscope/issues/6.
+        self.verify(["x.get(0,1).text = 'ok'"],
+                    ["1 ",
+                     "x",
+                     " . ",
+                     "\t`get",
+                     " ( 0 , 1 ) . ",
+                     "\t=text",
+                     " = 'ok'",
+                     ""])
+
+    def testSimplerTrailerAssignmentWithArrayParam(self,):
+        # Verify we can handle assignment statements with lhs trailers. See
+        # issue #6 at http://github.com/portante/pycscope/issues/6.
+        self.verify(["x.get([],1).text = 'ok'"],
+                    ["1 ",
+                     "x",
+                     " . ",
+                     "\t`get",
+                     " ( [ ] , 1 ) . ",
+                     "\t=text",
+                     " = 'ok'",
+                     ""])
+
+    def testSimplerTrailerAssignment1(self,):
+        # Verify we can handle assignment statements with lhs trailers. See
+        # issue #6 at http://github.com/portante/pycscope/issues/6.
+        self.verify(["y.x.get(0,1).text = 'ok'"],
+                    ["1 ",
+                     "y",
+                     " . ",
+                     "x",
+                     " . ",
+                     "\t`get",
+                     " ( 0 , 1 ) . ",
+                     "\t=text",
+                     " = 'ok'",
+                     ""])
+
+    def testSimplerTrailerAssignment1WithArrayParam(self,):
+        # Verify we can handle assignment statements with lhs trailers. See
+        # issue #6 at http://github.com/portante/pycscope/issues/6.
+        self.verify(["y.x.get([],1).text = 'ok'"],
+                    ["1 ",
+                     "y",
+                     " . ",
+                     "x",
+                     " . ",
+                     "\t`get",
+                     " ( [ ] , 1 ) . ",
+                     "\t=text",
+                     " = 'ok'",
+                     ""])
+
+    def testComplexTrailerAssignment(self,):
         # Verify we can handle assignment statements with lhs trailers. See
         # issue #6 at http://github.com/portante/pycscope/issues/6.
         self.verify(["x.get(0, 'sth', c=True).text = 'ok'"],
                     ["1 ",
-                     "\t=x",
+                     "x",
                      " . ",
                      "\t`get",
                      " ( 0 , 'sth' , ",
                      "c",
                      " = True ) . ",
-                     "text",
+                     "\t=text",
                      " = 'ok'",
+                     ""])
+
+    def testComplexTrailerAssignmentRedux(self,):
+        # Verify we can handle assignment statements with lhs trailers. See
+        # issue #6 at http://github.com/portante/pycscope/issues/6.
+        self.verify(["x.get(0, 'sth', c=True).get(1,2).text = 'ok'"],
+                    ["1 ",
+                     "x",
+                     " . ",
+                     "\t`get",
+                     " ( 0 , 'sth' , ",
+                     "c",
+                     " = True ) . ",
+                     "\t`get",
+                     " ( 1 , 2 ) . ",
+                     "\t=text",
+                     " = 'ok'",
+                     ""])
+
+    def testComplexTrailerAssignmentNested(self,):
+        # Verify we can handle assignment statements with lhs trailers. See
+        # issue #6 at http://github.com/portante/pycscope/issues/6.
+        self.verify(["x.get([], '123', c=[1,2], d=a.get(1,2),).text = 'ok'"],
+                    ["1 ",
+                     "x",
+                     " . ",
+                     "\t`get",
+                     " ( [ ] , '123' , ",
+                     "c",
+                     " = [ 1 , 2 ] , ",
+                     "d",
+                     " = ",
+                     "a",
+                     " . ",
+                     "\t`get",
+                     " ( 1 , 2 ) , ) . ",
+                     "\t=text",
+                     " = 'ok'",
+                     ""])
+
+    def testComplexTrailerAssignmentNested1(self,):
+        # Verify we can handle assignment statements with lhs trailers. See
+        # issue #6 at http://github.com/portante/pycscope/issues/6.
+        self.verify(["y.x.get([], '123', c=[1,2], d=a.get(1,2),).text = 'ok'"],
+                    ["1 ",
+                     "y",
+                     " . ",
+                     "x",
+                     " . ",
+                     "\t`get",
+                     " ( [ ] , '123' , ",
+                     "c",
+                     " = [ 1 , 2 ] , ",
+                     "d",
+                     " = ",
+                     "a",
+                     " . ",
+                     "\t`get",
+                     " ( 1 , 2 ) , ) . ",
+                     "\t=text",
+                     " = 'ok'",
+                     ""])
+
+    def testDeepAssignments(self,):
+        self.verify(["((((a,b,),(c,d,e),(f,)),(g,h,)),[i,j,k]) = ((((1,2,),(3,4,5),(6,)),(7,8,)),[9,10,11])"],
+                    ["1 ( ( ( ( ",
+                     "\t=a",
+                     " , ",
+                     "\t=b",
+                     " , ) , ( ",
+                     "\t=c",
+                     " , ",
+                     "\t=d",
+                     " , ",
+                     "\t=e",
+                     " ) , ( ",
+                     "\t=f",
+                     " , ) ) , ( ",
+                     "\t=g",
+                     " , ",
+                     "\t=h",
+                     " , ) ) , [ ",
+                     "\t=i",
+                     " , ",
+                     "\t=j",
+                     " , ",
+                     "\t=k",
+                     " ] ) = ( ( ( ( 1 , 2 , ) , ( 3 , 4 , 5 ) , ( 6 , ) ) , ( 7 , 8 , ) ) , [ 9 , 10 , 11 ] )",
+                     ""])
+
+    def testNoSymbolForAssignment(self,):
+        self.verify(["foo(x,5)[1] = 6"],
+                    ["1 ",
+                     "\t`foo",
+                     " ( ",
+                     "x",
+                     " , 5 ) [ 1 ] = 6",
                      ""])
 
     def testAugmentedAssignment(self,):
@@ -343,9 +507,9 @@ class TestParseSource(unittest.TestCase):
     def testTupleAssignment1(self,):
         self.verify(["a.c,b = 4, 2"],
                     ["1 ",
-                     "\t=a",
+                     "a",
                      " . ",
-                     "c",
+                     "\t=c",
                      " , ",
                      "\t=b",
                      " = 4 , 2",
@@ -500,23 +664,23 @@ class TestParseSource(unittest.TestCase):
                      " [ 5 ] = 4",
                      "",
                      "2 ",
-                     "\t=b",
+                     "b",
                      " [ 7 ] . ",
                      "z",
                      " . ",
                      "y",
                      " . ",
-                     "x",
+                     "\t=x",
                      " [ ",
                      "\t`func",
                      " ( 7 ) ] = 6",
                      "",
                      "3 ",
-                     "\t=b",
+                     "b",
                      " [ 0 ] . ",
                      "q",
                      " . ",
-                     "r",
+                     "\t=r",
                      " = 7",
                      ""])
 

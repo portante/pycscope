@@ -20,6 +20,7 @@ from abcd.ef.ghi import xyz, uvw, rst as tsr
 from abc import *
 from abcd.ef.ghi import *
 
+from . import xyz
 from .abc import xyz
 from ..abc import xyz
 from ...abc import xyz

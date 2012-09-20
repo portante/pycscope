@@ -96,6 +96,14 @@ This is PyCscope release 0.3b-pajp
 ==========  ========= ======  ====================================================
 Date        Release   Trac    Changes
 ==========  ========= ======  ====================================================
+2012/09/19  0.3e-pajp N/A     Fix issues #7 and #8: we now properly handle symbols
+                              closest to the assignment itself (rather than the
+                              first one), and replace the crazy comma counting
+                              method with a more stable pattern recognition method
+                              that explicitly records which tuples should receive
+                              the assignment mark; fixed handling of import state-
+                              ments of the form, "from . import moda"
+----------  --------- ------  ----------------------------------------------------
 2012/09/18  0.3d-pajp N/A     Implement debugging help from Issue #9: dumpCst now
                               works on subtrees of tuples, not just lists.
 ----------  --------- ------  ----------------------------------------------------
