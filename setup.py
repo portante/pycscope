@@ -25,8 +25,17 @@ setup (
     keywords = "pycscope cscope indexing",
     classifiers = [
         "Development Status :: 5 - Production/Stable",
-        "Topic :: Utilities",
+        "Environment :: Console",
+        "Intended Audience :: Developers",
         "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
+        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3",
+        "Topic :: Software Development",
+        "Topic :: Text Editors",
+        "Topic :: Text Editors :: Integrated Development Environments (IDE)",
+        "Topic :: Text Editors :: Text Processing",
+        "Topic :: Text Processing :: Indexing",
+        "Topic :: Utilities",
         ],
     url = "http://github.com/portante/pycscope",
 )
