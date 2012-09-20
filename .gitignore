@@ -3,3 +3,5 @@ cscope.files
 cscope.out
 pycscope.files
 pycscope.out
+dist
+pycscope.egg-info

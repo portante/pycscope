@@ -4,9 +4,9 @@ PyCscope
 
 :Copyright: Copyright 2006 Dean Hall.  See License_ for details.
 :Author: Dean Hall
-:Release: 0.3d-pajp
+:Release: 1.0
 :Date: 2007/12/25
-:Modified: 2012/09/18
+:Modified: 2012/09/20
 
 Purpose
 -------
@@ -91,11 +91,13 @@ by the `CscopeFinder` plugin for jEdit.  Other editors are not tested.
 Release Notes
 -------------
 
-This is PyCscope release 0.3b-pajp
+This is PyCscope release 1.0
 
 ==========  ========= ======  ====================================================
 Date        Release   Trac    Changes
 ==========  ========= ======  ====================================================
+2012/09/20  1.0       N/A     Call it 1.0; update to use setuptools
+----------  --------- ------  ----------------------------------------------------
 2012/09/19  0.3e-pajp N/A     Fix issues #7 and #8: we now properly handle symbols
                               closest to the assignment itself (rather than the
                               first one), and replace the crazy comma counting
