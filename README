@@ -107,6 +107,7 @@ Date        Release   Trac    Changes
                               unit tests that were not properly run before the
                               switch to nose; add contrib area containing the
                               pyxcscope integration for (X)Emacs.
+----------  --------- ------  ----------------------------------------------------
 2012/09/20  1.0       N/A     Call it 1.0; update to use setuptools; drop .py from
                               installed script name; transition authorship from
                               Dean Hall to Peter Portante.
