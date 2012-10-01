@@ -1,0 +1,4 @@
+#!/bin/bash
+
+cd test
+nosetests --with-coverage --cover-package pycscope --cover-erase --cover-html $@

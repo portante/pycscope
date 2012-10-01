@@ -3,7 +3,10 @@
 """
 
 import unittest, parser
-from cStringIO import StringIO
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
 from pycscope import parseSource, Line, Symbol, NonSymbol, Mark, dumpCst
 
 
@@ -152,12 +155,14 @@ class TestLine(unittest.TestCase):
 
     def testConstructor(self,):
         l = Line(1)
-        self.assertEqual(1, l._test_lineno)
+        self.assertEqual(1, l.lineno)
         self.assertEqual([], l._test_contents)
+        self.assertEqual(False, l._test_hasSymbol)
 
         l = Line(119)
-        self.assertEqual(119, l._test_lineno)
+        self.assertEqual(119, l.lineno)
         self.assertEqual([], l._test_contents)
+        self.assertEqual(False, l._test_hasSymbol)
 
         try:
             l = Line()
@@ -178,7 +183,7 @@ class TestLine(unittest.TestCase):
         l += Symbol("x", Mark.GLOBAL)
         l += NonSymbol("=")
         l += NonSymbol("5")
-        self.assertEqual(["113", "\tgx", "=", "5"], l)
+        self.assertEqual("<Line:113 \\n\tgx\\n = 5\\n\\n>", repr(l))
 
         l = Line(117)
         l += NonSymbol("def")
@@ -186,7 +191,7 @@ class TestLine(unittest.TestCase):
         l += NonSymbol("(")
         l += Symbol("y", Mark.INCLUDE)
         l += NonSymbol(")")
-        self.assertEqual(["117 def ", "\tgx ", "( ", "\t~y ", ") "], l)
+        self.assertEqual("<Line:117 def \\n\tgx\\n ( \\n\t~y\\n )\\n\\n>", repr(l))
 
 
 class TestParseSource(unittest.TestCase):

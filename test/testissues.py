@@ -101,10 +101,18 @@ class MyClass(object):
     def testIssue0009(self):
         """ Verify dumpCst works on tuples.
         """
-        from cStringIO import StringIO
+        try:
+            from cStringIO import StringIO
+        except ImportError:
+            from io import StringIO
         out = StringIO()
-        import parser
+        import parser, sys
         cst = parser.suite("import sys\na = b\n")
         pycscope.dumpCst(cst.totuple(True), out)
         output = out.getvalue()
-        self.assertEqual(output, "['file_input',\n ['stmt',\n  ['simple_stmt',\n   ['small_stmt',\n    ['import_stmt',\n     ['import_name',\n      ['NAME', 'import', 1],\n      ['dotted_as_names',\n       ['dotted_as_name', ['dotted_name', ['NAME', 'sys', 1]]]]]]],\n   ['NEWLINE', '', 1]]],\n ['stmt',\n  ['simple_stmt',\n   ['small_stmt',\n    ['expr_stmt',\n     ['testlist',\n      ['test',\n       ['or_test',\n        ['and_test',\n         ['not_test',\n          ['comparison',\n           ['expr',\n            ['xor_expr',\n             ['and_expr',\n              ['shift_expr',\n               ['arith_expr',\n                ['term',\n                 ['factor',\n                  ['power', ['atom', ['NAME', 'a', 2]]]]]]]]]]]]]]]],\n     ['EQUAL', '=', 2],\n     ['testlist',\n      ['test',\n       ['or_test',\n        ['and_test',\n         ['not_test',\n          ['comparison',\n           ['expr',\n            ['xor_expr',\n             ['and_expr',\n              ['shift_expr',\n               ['arith_expr',\n                ['term',\n                 ['factor',\n                  ['power', ['atom', ['NAME', 'b', 2]]]]]]]]]]]]]]]]]],\n   ['NEWLINE', '', 2]]],\n ['NEWLINE', '', 2],\n ['ENDMARKER', '', 2]]\n")
+        if sys.hexversion < 0x03000000:
+            expected = "['file_input',\n ['stmt',\n  ['simple_stmt',\n   ['small_stmt',\n    ['import_stmt',\n     ['import_name',\n      ['NAME', 'import', 1],\n      ['dotted_as_names',\n       ['dotted_as_name', ['dotted_name', ['NAME', 'sys', 1]]]]]]],\n   ['NEWLINE', '', 1]]],\n ['stmt',\n  ['simple_stmt',\n   ['small_stmt',\n    ['expr_stmt',\n     ['testlist',\n      ['test',\n       ['or_test',\n        ['and_test',\n         ['not_test',\n          ['comparison',\n           ['expr',\n            ['xor_expr',\n             ['and_expr',\n              ['shift_expr',\n               ['arith_expr',\n                ['term',\n                 ['factor',\n                  ['power', ['atom', ['NAME', 'a', 2]]]]]]]]]]]]]]]],\n     ['EQUAL', '=', 2],\n     ['testlist',\n      ['test',\n       ['or_test',\n        ['and_test',\n         ['not_test',\n          ['comparison',\n           ['expr',\n            ['xor_expr',\n             ['and_expr',\n              ['shift_expr',\n               ['arith_expr',\n                ['term',\n                 ['factor',\n                  ['power', ['atom', ['NAME', 'b', 2]]]]]]]]]]]]]]]]]],\n   ['NEWLINE', '', 2]]],\n ['NEWLINE', '', 2],\n ['ENDMARKER', '', 2]]\n"
+        else:
+            expected = "['file_input',\n ['stmt',\n  ['simple_stmt',\n   ['small_stmt',\n    ['import_stmt',\n     ['import_name',\n      ['NAME', 'import', 1],\n      ['dotted_as_names',\n       ['dotted_as_name', ['dotted_name', ['NAME', 'sys', 1]]]]]]],\n   ['NEWLINE', '', 1]]],\n ['stmt',\n  ['simple_stmt',\n   ['small_stmt',\n    ['expr_stmt',\n     ['testlist_star_expr',\n      ['test',\n       ['or_test',\n        ['and_test',\n         ['not_test',\n          ['comparison',\n           ['expr',\n            ['xor_expr',\n             ['and_expr',\n              ['shift_expr',\n               ['arith_expr',\n                ['term',\n                 ['factor',\n                  ['power', ['atom', ['NAME', 'a', 2]]]]]]]]]]]]]]]],\n     ['EQUAL', '=', 2],\n     ['testlist_star_expr',\n      ['test',\n       ['or_test',\n        ['and_test',\n         ['not_test',\n          ['comparison',\n           ['expr',\n            ['xor_expr',\n             ['and_expr',\n              ['shift_expr',\n               ['arith_expr',\n                ['term',\n                 ['factor',\n                  ['power', ['atom', ['NAME', 'b', 2]]]]]]]]]]]]]]]]]],\n   ['NEWLINE', '', 2]]],\n ['NEWLINE', '', 2],\n ['ENDMARKER', '', 2]]\n"
+        print(repr(output))
+        self.assertEqual(output, expected)
