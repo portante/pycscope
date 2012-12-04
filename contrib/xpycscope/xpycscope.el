@@ -185,7 +185,7 @@
 ;; variable is used to determine the mapping.  One use for this
 ;; variable is when you want to share the database file with other
 ;; users; in this case, the database may be located in a directory
-;; separate from the source files.  
+;; separate from the source files.
 ;;
 ;; Setting the variable, `pycscope-initial-directory', is useful when a
 ;; search is to be expanded by specifying a pycscope database directory
@@ -245,6 +245,7 @@
 ;;
 ;;      C-c s L         Create list of files to index.
 ;;      C-c s I         Create list and index.
+;;      C-c s O         Create index.
 ;;      C-c s E         Edit list of files to index.
 ;;      C-c s W         Locate this buffer's pycscope directory
 ;;                      ("W" --> "where").
@@ -372,7 +373,7 @@
 ;;      disable automatic database creation, updating, and
 ;;      maintenance.
 ;;
-;; "pycscope-display-pycscope-buffer" 
+;; "pycscope-display-pycscope-buffer"
 ;;      If non-nil, display the *pycscope* buffer after each search
 ;;      (default).  This variable can be set in order to reduce the
 ;;      number of keystrokes required to navigate through the matches.
@@ -951,6 +952,7 @@ Must end with a newline.")
   ;; ---
   (define-key pycscope-list-entry-keymap "L" 'pycscope-create-list-of-files-to-index)
   (define-key pycscope-list-entry-keymap "I" 'pycscope-index-files)
+  (define-key pycscope-list-entry-keymap "O" 'pycscope-index-files-only)
   (define-key pycscope-list-entry-keymap "E" 'pycscope-edit-list-of-files-to-index)
   (define-key pycscope-list-entry-keymap "W" 'pycscope-tell-user-about-directory)
   (define-key pycscope-list-entry-keymap "S" 'pycscope-tell-user-about-directory)
@@ -1146,6 +1148,7 @@ directory should begin.")
   ;; ---
   (define-key pycscope:map "\C-csL" 'pycscope-create-list-of-files-to-index)
   (define-key pycscope:map "\C-csI" 'pycscope-index-files)
+  (define-key pycscope:map "\C-csO" 'pycscope-index-files-only)
   (define-key pycscope:map "\C-csE" 'pycscope-edit-list-of-files-to-index)
   (define-key pycscope:map "\C-csW" 'pycscope-tell-user-about-directory)
   (define-key pycscope:map "\C-csS" 'pycscope-tell-user-about-directory)
@@ -1191,6 +1194,8 @@ directory should begin.")
 			pycscope-create-list-of-files-to-index t ]
 		      [ "Create list and index"
 			pycscope-index-files t ]
+		      [ "Create index"
+			pycscope-index-files-only t ]
 		      [ "Edit list of files to index"
 			pycscope-edit-list-of-files-to-index t ]
 		      [ "Locate this buffer's pycscope directory"
@@ -1231,7 +1236,7 @@ directory should begin.")
 			:style toggle :selected pycscope-use-relative-paths ]
 		      [ "No mouse prompts" (setq pycscope-no-mouse-prompts
 						 (not pycscope-no-mouse-prompts))
-			:style toggle :selected pycscope-no-mouse-prompts ] 
+			:style toggle :selected pycscope-no-mouse-prompts ]
 		      )
 		    ))
 
@@ -1289,7 +1294,7 @@ The text properties to be added:
   )
 
 
-(defun pycscope-show-entry-internal (file line-number 
+(defun pycscope-show-entry-internal (file line-number
 					&optional save-mark-p window arrow-p)
   "Display the buffer corresponding to FILE and LINE-NUMBER
 in some window.  If optional argument WINDOW is given,
@@ -1939,7 +1944,7 @@ using the mouse."
 			    pycscope-directory
 			    (file-name-directory pycscope-directory))
 		      ))
-		(setq pycscope-directory 
+		(setq pycscope-directory
 		      (file-name-as-directory pycscope-directory))
 		(if (not (member pycscope-directory pycscope-searched-dirs))
 		    (progn
@@ -2136,6 +2141,20 @@ SENTINEL-FUNC are optional process filter and sentinel, respectively."
 			    'pycscope-unix-index-files-sentinel)
       (process-kill-without-query pycscope-unix-index-process)
       )
+    ))
+
+
+(defun pycscope-index-files-only (top-directory)
+  "Index files in a directory.
+This function looks for an existing list of files to index, and then
+indexes the files from that list."
+  (interactive "DIndex files in directory: ")
+  (let ()
+    (pycscope-unix-index-files-internal
+     top-directory
+     (format "Creating cscope index `%s' in:\n\t%s\n\n%s"
+	     pycscope-database-file top-directory pycscope-separator-line)
+     '("-d"))
     ))
 
 

@@ -53,6 +53,10 @@
 #          Specifies the name of the file into which the list of files
 #          to index is placed (default: pycscope.files).
 #
+#     -d
+#          Suppress the generation/updating of the list of files. The database
+#          is updated from the existing list file without regenerating it.
+#
 #     -l
 #          Suppress the generation/updating of the pycscope database
 #          file.  Only a list of files is generated.
@@ -73,13 +77,14 @@ set -e
 PATH="/usr/local/bin:/sbin:/usr/sbin:/bin:/usr/bin:$PATH"
 export PATH
 
+DB_ONLY=
 LIST_ONLY=
 DIR='.'
 LIST_FILE='pycscope.files'
 DATABASE_FILE='pycscope.out'
 RECURSE=
 VERBOSE=
-export DIR RECURSE	                    # Need to pass these to subprocesses
+export DIR RECURSE                      # Need to pass these to subprocesses
 
 while [ -n "$1" ]
 do
@@ -102,6 +107,9 @@ do
         LIST_FILE="$2"
         shift
         ;;
+    -d)
+        DB_ONLY=1
+        ;;
     -l)
         LIST_ONLY=1
         ;;
@@ -120,30 +128,39 @@ done
 
 cd $DIR
 
-if [ "X$VERBOSE" != "X" ]
+if [ "X$DB_ONLY" != "X" ]
 then
-    echo "Creating list of files to index ..."
-fi
-
-(
-    if [ "X$RECURSE" = "X" ]
+    if [ ! -e $LIST_FILE ]
     then
-        # Ugly, inefficient, but it works.
-        for f in *
-        do
-            echo "$DIR/$f"
-        done
-    else
-        find $DIR \( -type f -o -type l \)
+        echo "$0: list file, $(pwd)/$LIST_FILE, does not exist" >&2
+        exit 1
     fi
-) | \
-    egrep -i '\.py$' | \
-    sed -e '/\/CVS\//d' -e '/\/RCS\//d' -e 's/^\.\///' | \
-    sort > $LIST_FILE
+else
+    if [ "X$VERBOSE" != "X" ]
+    then
+        echo "Creating list of files to index ..."
+    fi
 
-if [ "X$VERBOSE" != "X" ]
-then
-    echo "Creating list of files to index ... done"
+    (
+        if [ "X$RECURSE" = "X" ]
+        then
+            # Ugly, inefficient, but it works.
+            for f in *
+            do
+                echo "$DIR/$f"
+            done
+        else
+            find $DIR \( -type f -o -type l \)
+        fi
+    ) | \
+        egrep -i '\.py$' | \
+        sed -e '/\/CVS\//d' -e '/\/RCS\//d' -e 's/^\.\///' | \
+        sort > $LIST_FILE
+
+    if [ "X$VERBOSE" != "X" ]
+    then
+        echo "Creating list of files to index ... done"
+    fi
 fi
 
 if [ "X$LIST_ONLY" != "X" ]
