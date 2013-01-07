@@ -21,7 +21,7 @@ __usage__ = """Usage: pycscope.py [-D] [-R] [-S] [-V] [-t cnt] [-f reffile] [-i 
 -f reffile      Use 'reffile' as cross-ref file name instead of 'cscope.out'
 -i srclistfile  Use the contents of 'srclistfile' as the list of source files to scan"""
 
-import getopt, sys, os, os.path, string
+import getopt, sys, os, os.path, string, subprocess, platform
 import keyword, parser, symbol, token
 from threading import Lock, Thread
 
@@ -87,6 +87,16 @@ kwlist.extend(("True", "False", "None"))
 
 strings_as_symbols = False
 
+def is_mac():
+	if 'darwin' in platform.platform().lower():
+		return True
+	else:
+		return False
+
+def getpwd():
+	p = subprocess.Popen('pwd', stdout=subprocess.PIPE)
+	return p.stdout.readline().strip()
+
 def main(argv=None):
     """Parse command line args and act accordingly.
     """
@@ -131,7 +141,11 @@ def main(argv=None):
         args = "."
 
     # Parse the given list of files/dirs
-    basepath = os.getcwd()
+	basepath = None
+	if is_mac():
+		basepath = getpwd()
+	else:
+		basepath = os.getcwd()
     gen = genFiles(basepath, args, recurse)
 
     if threadCount > 1:
