@@ -7,6 +7,7 @@ try:
     from cStringIO import StringIO
 except ImportError:
     from io import StringIO
+import pycscope
 from pycscope import parseSource, Line, Symbol, NonSymbol, Mark, dumpCst
 
 
@@ -198,6 +199,10 @@ class TestParseSource(unittest.TestCase):
 
     def setUp(self,):
         self.buf = []
+        pycscope.strings_as_symbols = False
+
+    def tearDown(self,):
+        pycscope.strings_as_symbols = False
 
     def verify(self, src, exp, dump=False):
         ''' Run the verification of a source value against an expected output
@@ -272,7 +277,7 @@ class TestParseSource(unittest.TestCase):
                      "z",
                      " [ { 'a' : ",
                      "x",
-                     " [ ( 1 , ) ] } ] }", 
+                     " [ ( 1 , ) ] } ] }",
                      ""])
 
     def testSimpleTrailerAssignment(self,):
@@ -443,6 +448,63 @@ class TestParseSource(unittest.TestCase):
                      " , ",
                      "\t=k",
                      " ] ) = ( ( ( ( 1 , 2 , ) , ( 3 , 4 , 5 ) , ( 6 , ) ) , ( 7 , 8 , ) ) , [ 9 , 10 , 11 ] )",
+                     ""])
+
+    def testStringsAsSymbolsOff(self,):
+        self.verify(["foo('abc')"],
+                    ["1 ",
+                     "\t`foo",
+                     " ( 'abc' )",
+                     ""])
+
+    def testStringsAsSymbolsOnSimple(self,):
+        pycscope.strings_as_symbols = True
+        self.verify(["foo('abc')"],
+                    ["1 ",
+                     "\t`foo",
+                     " ( [[ ",
+                     "'abc'",
+                     " ]] )",
+                     ""])
+
+    def testStringsAsSymbolsOnSimpleTriple(self,):
+        pycscope.strings_as_symbols = True
+        self.verify(["foo('''abc''')"],
+                    ["1 ",
+                     "\t`foo",
+                     " ( [[ ",
+                     "'''abc'''",
+                     " ]] )",
+                     ""])
+
+    def testStringsAsSymbolsOnLots(self,):
+        pycscope.strings_as_symbols = True
+        self.verify(["foo('_ABC0123klm_456xzy789XYZ')"],
+                    ["1 ",
+                     "\t`foo",
+                     " ( [[ ",
+                     "'_ABC0123klm_456xzy789XYZ'",
+                     " ]] )",
+                     ""])
+
+    def testStringsAsSymbolsOnSimpleDouble(self,):
+        pycscope.strings_as_symbols = True
+        self.verify(['foo("abc")'],
+                    ["1 ",
+                     "\t`foo",
+                     " ( [[ ",
+                     "\"abc\"",
+                     " ]] )",
+                     ""])
+
+    def testStringsAsSymbolsOnSimpleDoubleTriple(self,):
+        pycscope.strings_as_symbols = True
+        self.verify(['foo("""abc""")'],
+                    ["1 ",
+                     "\t`foo",
+                     " ( [[ ",
+                     "\"\"\"abc\"\"\"",
+                     " ]] )",
                      ""])
 
     def testNoSymbolForAssignment(self,):
