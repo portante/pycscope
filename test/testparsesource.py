@@ -963,18 +963,18 @@ class TestParseSource(unittest.TestCase):
                      "c",
                      ""])
 
-    def testFuncDefNoSymbols(self,):
+    def testFuncDefNoSymbolsInBody(self,):
         # Verify the ability to handle a function definition with no symbols
         # in the body.
         self.verify(["def main():",
                      "\tpass"],
                     ["1 def ",
                      "\t$main",
-                     " ( ) : ",
+                     " ( ) :",
                      "",
                      "2 pass ",
                      "\t}",
-                     ""])
+                     ""], True)
 
     def testFuncDefEndNonSymbol(self,):
         ''' Verify the ability to handle a function definition with symbols in the body, ending with a non-symbol.
@@ -1008,8 +1008,8 @@ class TestParseSource(unittest.TestCase):
                      "\t}",
                      ""])
 
-    def testFuncDefNoSymbols(self,):
-        ''' Verify the ability to handle a function definition with no symbols in the body.
+    def testSymbolAssignmentFollowingFuncDef(self,):
+        ''' Verify the ability to handle a function definition end with symbol assignment following.
         '''
         self.verify(["def main():",
                      "\tif x:\t\ty = 0",

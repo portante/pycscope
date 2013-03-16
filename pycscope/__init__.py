@@ -408,6 +408,7 @@ class Line(object):
             # alternating lines of NonSymbol and then Symbol.
             if isinstance(self.__contents[-1], Symbol):
                 self.__contents.append(NonSymbol(' '))
+            self.__hasSymbol = True
             self.__contents.append(other)
         elif self.__contents \
                 and ((isinstance(self.__contents[-1], NonSymbol) and isinstance(other, NonSymbol))

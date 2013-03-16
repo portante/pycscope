@@ -36,7 +36,7 @@ class TestIssues(unittest.TestCase):
 
 
     def test0019(self,):
-        """ Make sure new lines are observed 
+        """ Make sure new lines are observed
             when NEWLINE token doesn't exist.
         """
         src = "(a,\nb,) = 4, 2\n"
@@ -82,6 +82,9 @@ class MyClass(object):
                                  " ( \n"
                                  "self\n"
                                  " ) :\n"
+                                 "\n"
+                                 "6 return 'foo' \n"
+                                 "\t}\n"
                                  "\n"
                                  "8 def \n"
                                  "\t$my_method\n"
