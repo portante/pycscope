@@ -600,9 +600,9 @@ class TestParseSource(unittest.TestCase):
         self.verify(["foo('abc')"],
                     ["1 ",
                      "\t`foo",
-                     " ( [[ ",
-                     "'abc'",
-                     " ]] )",
+                     " ( ' ",
+                     "abc",
+                     " ' )",
                      ""])
 
     def testStringsAsSymbolsOnSimpleTriple(self,):
@@ -610,9 +610,9 @@ class TestParseSource(unittest.TestCase):
         self.verify(["foo('''abc''')"],
                     ["1 ",
                      "\t`foo",
-                     " ( [[ ",
-                     "'''abc'''",
-                     " ]] )",
+                     " ( ''' ",
+                     "abc",
+                     " ''' )",
                      ""])
 
     def testStringsAsSymbolsOnLots(self,):
@@ -620,9 +620,9 @@ class TestParseSource(unittest.TestCase):
         self.verify(["foo('_ABC0123klm_456xzy789XYZ')"],
                     ["1 ",
                      "\t`foo",
-                     " ( [[ ",
-                     "'_ABC0123klm_456xzy789XYZ'",
-                     " ]] )",
+                     " ( ' ",
+                     "_ABC0123klm_456xzy789XYZ",
+                     " ' )",
                      ""])
 
     def testStringsAsSymbolsOnSimpleDouble(self,):
@@ -630,9 +630,9 @@ class TestParseSource(unittest.TestCase):
         self.verify(['foo("abc")'],
                     ["1 ",
                      "\t`foo",
-                     " ( [[ ",
-                     "\"abc\"",
-                     " ]] )",
+                     " ( \" ",
+                     "abc",
+                     " \" )",
                      ""])
 
     def testStringsAsSymbolsOnSimpleDoubleTriple(self,):
@@ -640,9 +640,9 @@ class TestParseSource(unittest.TestCase):
         self.verify(['foo("""abc""")'],
                     ["1 ",
                      "\t`foo",
-                     " ( [[ ",
-                     "\"\"\"abc\"\"\"",
-                     " ]] )",
+                     " ( \"\"\" ",
+                     "abc",
+                     " \"\"\" )",
                      ""])
 
     def testNoSymbolForAssignment(self,):

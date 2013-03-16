@@ -4,7 +4,7 @@ PyCscope
 
 :Copyright: Copyright 2013 Peter Portante.  See LICENSE for details.
 :Author: Peter Portante
-:Release: 1.2
+:Release: 1.2.1
 :Date: 2013/03/16
 
 Purpose
@@ -96,11 +96,13 @@ by the `CscopeFinder` plugin for jEdit.  Other editors are not tested.
 Release Notes
 -------------
 
-This is PyCscope release 1.2
+This is PyCscope release 1.2.1
 
 ==========  ========= ======  ====================================================
 Date        Release   Trac    Changes
 ==========  ========= ======  ====================================================
+2013/03/16  1.2.1     N/A     Fix strings-as-symbols support (really).
+----------  --------- ------  ----------------------------------------------------
 2013/03/16  1.2       N/A     Fix strings-as-symbols support; fix end of function
                               marking; add the ability to only run the indexer;
                               remove the threading support that was broken.
