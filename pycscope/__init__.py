@@ -129,10 +129,35 @@ def main(argv=None):
 
     # Symbol data for the last file ends with a file mark
     indexbuff.append("\n%s" % Mark(Mark.FILE))
-    writeIndex(basepath, indexfn, indexbuff, fnamesbuff)
+
+    if sys.hexversion < 0x03000000:
+        fout = open(os.path.join(basepath, indexfn), 'wb')
+    else:
+        fout = open(os.path.join(basepath, indexfn), 'w', newline='\n')
+
+    writeIndex(basepath, fout, indexbuff, fnamesbuff)
+    fout.close()
 
 
-def work(basepath, gen,  debug):
+def writeIndex(basepath, fout, indexbuff, fnamesbuff):
+    """Write the index buffer to the output file.
+    """
+    # Write the header and index
+    index = ''.join(indexbuff)
+    index_len = len(index)
+    hdr_len = len(basepath) + 25
+    fout.write("cscope 15 %s -c %010d" % (basepath, hdr_len + index_len))
+    fout.write(index)
+
+    # Write trailer info
+    fnames = '\n'.join(fnamesbuff) + '\n'
+    fout.write("\n1\n.\n0\n")
+    fout.write("%d\n" % len(fnamesbuff))
+    fout.write("%d\n" % len(fnames))
+    fout.write(fnames)
+
+
+def work(basepath, gen, debug):
     """ The actual work of parsing the files.
     """
 
@@ -314,7 +339,7 @@ class Symbol(object):
 
     def __bool__(self):
         """ Defined so that the interpretter won't invoke
-            __getattr__() to try to find it.
+            __getattr__() to try to find it (Python 3).
         """
         return True
 
@@ -918,29 +943,6 @@ def parseSource(sourcecode, indexbuff, indexbuff_len, dump=False):
     indexbuff.extend(ctx.buff)
     indexbuff_len += len(ctx.buff)
     return indexbuff_len
-
-def writeIndex(basepath, indexfn, indexbuff, fnamesbuff):
-    """Write the index buffer to the output file.
-    """
-    if sys.hexversion < 0x03000000:
-        fout = open(os.path.join(basepath, indexfn), 'wb')
-    else:
-        fout = open(os.path.join(basepath, indexfn), 'w', newline='\n')
-
-    # Write the header and index
-    index = ''.join(indexbuff)
-    index_len = len(index)
-    hdr_len = len(basepath) + 25
-    fout.write("cscope 15 %s -c %010d" % (basepath, hdr_len + index_len))
-    fout.write(index)
-
-    # Write trailer info
-    fnames = '\n'.join(fnamesbuff) + '\n'
-    fout.write("\n1\n.\n0\n")
-    fout.write("%d\n" % len(fnamesbuff))
-    fout.write("%d\n" % len(fnames))
-    fout.write(fnames)
-    fout.close()
 
 
 if __name__ == "__main__":

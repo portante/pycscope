@@ -2,7 +2,7 @@
 """ Unit tests for parsing Python source into cscope index
 """
 
-import unittest, parser
+import unittest, parser, errno
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -68,6 +68,35 @@ class TestMark(unittest.TestCase):
         m = Mark(Mark.GLOBAL)
         self.assertEqual('\tg', str(m))
 
+    def testRepr(self,):
+        m = Mark(Mark.CLASS)
+        self.assertEqual('<Mark:\\tc>', repr(m))
+
+    def testNotEqual(self,):
+        m = Mark(Mark.FUNC_END)
+        n = Mark(Mark.FUNC_CALL)
+        self.assertTrue(m != n)
+        m = Mark(Mark.FUNC_END)
+        n = Mark(Mark.FUNC_END)
+        self.assertFalse(m != n)
+
+    def testEqual(self,):
+        m = Mark(Mark.FUNC_END)
+        n = Mark(Mark.FUNC_CALL)
+        self.assertFalse(m == n)
+        m = Mark(Mark.FUNC_END)
+        n = Mark(Mark.FUNC_END)
+        self.assertTrue(m == n)
+
+    def testGetattr(self,):
+        m = Mark(Mark.INCLUDE)
+        try:
+            x = m.line_number
+        except AttributeError as e:
+            pass
+        else:
+            self.fail("Expected attribute error referencing non-existent line_number attribute")
+
 
 class TestNonSymbol(unittest.TestCase):
     """ Verify the NonSymbol class.
@@ -98,6 +127,10 @@ class TestNonSymbol(unittest.TestCase):
         ns += NonSymbol("then")
         self.assertEqual("that then", ns.format())
 
+    def testNonSymbol(self,):
+        ns = NonSymbol("bar")
+        self.assertEqual("<NonSymbol:bar>", repr(ns))
+
 
 class TestSymbol(unittest.TestCase):
     """ Verify the Symbol class.
@@ -125,14 +158,14 @@ class TestSymbol(unittest.TestCase):
             failed = True
         except AssertionError:
             failed = False
-        self.assertFalse(failed, "Constructor allowed an empty string without an function end marker")
+        self.assertFalse(failed, "Constructor allowed an empty string without a function end marker")
 
         try:
             s = Symbol('', Mark.FUNC_END)
             failed = False
         except AssertionError:
             failed = True
-        self.assertFalse(failed, "Constructor dis-allowed an empty string with an function end marker")
+        self.assertFalse(failed, "Constructor dis-allowed an empty string with a function end marker")
 
         try:
             s = Symbol(5)
@@ -148,6 +181,28 @@ class TestSymbol(unittest.TestCase):
 
         s = Symbol('bye', '~')
         self.assertEqual('\t~bye', s.format())
+
+    def testRepr(self,):
+        s = Symbol('foo', '=')
+        self.assertEqual('<Symbol:\t=foo>', repr(s))
+
+    def testCoerce(self,):
+        try:
+            s = Symbol('bar')
+            coerce(1, s)
+        except TypeError as e:
+            pass
+        else:
+            self.fail("Expected a TypeError exception.")
+
+    def testAttributes(self,):
+        s = Symbol('bar')
+        try:
+            x = s.line_number
+        except AttributeError as e:
+            pass
+        else:
+            self.fail("Expected attribute error for referencing non-existent line_number attribute")
 
 
 class TestLine(unittest.TestCase):
@@ -170,14 +225,23 @@ class TestLine(unittest.TestCase):
             failed = True
         except TypeError:
             failed = False
-        self.assertFalse(failed, "Constructor must take one paramter")
+        self.assertFalse(failed, "Constructor must take one parameter")
 
         try:
             l = Line(1,2)
             failed = True
         except TypeError:
             failed = False
-        self.assertFalse(failed, "Constructor takes only one paramter")
+        self.assertFalse(failed, "Constructor takes only one parameter")
+
+    def testGetattr(self,):
+        l = Line(15)
+        try:
+            x = l.line_number
+        except AttributeError as e:
+            pass
+        else:
+            self.fail("Expected an attribute error looking for the non-existent line_number attribute")
 
     def testAddAndRepr(self,):
         l = Line(113)
@@ -193,6 +257,63 @@ class TestLine(unittest.TestCase):
         l += Symbol("y", Mark.INCLUDE)
         l += NonSymbol(")")
         self.assertEqual("<Line:117 def \\n\tgx\\n ( \\n\t~y\\n )\\n\\n>", repr(l))
+
+    def testCoerce(self,):
+        try:
+            l = Line(42)
+            coerce(1, l)
+        except TypeError as e:
+            pass
+        else:
+            self.fail("Expected a TypeError exception.")
+
+
+class TestDumpCst(unittest.TestCase):
+
+    def testGoodStream(self,):
+        res = dumpCst(parser.suite("a = 1"), StringIO()).getvalue()
+        exp = "['file_input',\n ['stmt',\n  ['simple_stmt',\n   ['small_stmt',\n    ['expr_stmt',\n     ['testlist',\n      ['test',\n       ['or_test',\n        ['and_test',\n         ['not_test',\n          ['comparison',\n           ['expr',\n            ['xor_expr',\n             ['and_expr',\n              ['shift_expr',\n               ['arith_expr',\n                ['term',\n                 ['factor',\n                  ['power', ['atom', ['NAME', 'a', 1]]]]]]]]]]]]]]]],\n     ['EQUAL', '=', 1],\n     ['testlist',\n      ['test',\n       ['or_test',\n        ['and_test',\n         ['not_test',\n          ['comparison',\n           ['expr',\n            ['xor_expr',\n             ['and_expr',\n              ['shift_expr',\n               ['arith_expr',\n                ['term',\n                 ['factor',\n                  ['power', ['atom', ['NUMBER', '1', 1]]]]]]]]]]]]]]]]]],\n   ['NEWLINE', '', 1]]],\n ['NEWLINE', '', 1],\n ['ENDMARKER', '', 1]]\n"
+        self.assertEquals(res, exp)
+
+    def testGoodStreamBadPipe(self,):
+        import pprint
+        orig_pprint = pprint.pprint
+        def mockEpipe(obj, stm):
+            e = IOError()
+            e.errno = errno.EPIPE
+            raise e
+        pprint.pprint = mockEpipe
+        try:
+            res = dumpCst(parser.suite("a = 1"), StringIO()).getvalue()
+        finally:
+            pprint.pprint = orig_pprint
+        self.assertEquals(res, "")
+
+    def testGoodStreamIOError(self,):
+        import pprint
+        orig_pprint = pprint.pprint
+        def mockEpipe(obj, stm):
+            e = IOError()
+            e.errno = errno.ENOENT
+            raise e
+        pprint.pprint = mockEpipe
+        try:
+            dumpCst(parser.suite("a = 1"), StringIO()).getvalue()
+        except IOError as e:
+            assert e.errno == errno.ENOENT
+        else:
+            self.fail("Expected IOError raised")
+        finally:
+            pprint.pprint = orig_pprint
+
+    def testBadStream(self,):
+        x = 0
+        try:
+            dumpCst(parser.suite("a = 1"), x)
+        except AttributeError as e:
+            pass
+        else:
+            self.fail("Expected a ValueError since we did not give a proper streem")
 
 
 class TestParseSource(unittest.TestCase):
@@ -245,6 +366,23 @@ class TestParseSource(unittest.TestCase):
     def testEmptyLines(self,):
         # Verify we can handle a file with just empty lines.
         self.verify(["", ""], [])
+
+    def testDumping(self,):
+        # Verify we can handle dumping
+        self.verify(["", ""], [], True)
+
+    def testMissingNewLine(self,):
+        # Verify we can handle dumping
+        parseSource(" ", self.buf, 0)
+        assert len(self.buf) == 0
+
+    def testSyntaxErrors(self,):
+        try:
+            parseSource("a a (foo)", self.buf, 0)
+        except SyntaxError as e:
+            assert e.lineno == 1
+        else:
+            self.fail("Expected a syntax error")
 
     def testSimpleAssignment(self,):
         # Verify we can handle simple assignment statements.
