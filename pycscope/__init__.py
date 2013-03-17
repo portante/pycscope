@@ -92,12 +92,14 @@ def main(argv=None):
 
     if argv is None:
         argv = sys.argv
+
     # Parse the command line arguments
     try:
         opts, args = getopt.getopt(argv[1:], "DRSVf:i:")
     except getopt.GetoptError:
         print(__usage__)
         return 2
+
     debug = False
     recurse = False
     indexfn = "cscope.out"
@@ -109,7 +111,7 @@ def main(argv=None):
         if o == "-S":
             strings_as_symbols = True
         if o == "-V":
-            # Print version an exit.
+            # Print version and exit.
             print("pycscope.py: Version %s" % __version__)
             return 0
         if o == "-f":
@@ -137,6 +139,8 @@ def main(argv=None):
 
     writeIndex(basepath, fout, indexbuff, fnamesbuff)
     fout.close()
+
+    return 0
 
 
 def writeIndex(basepath, fout, indexbuff, fnamesbuff):
