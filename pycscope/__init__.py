@@ -874,9 +874,10 @@ def processTerminal(ctx, cst):
         if cst[1] in kwlist:
             if id(cst) in ctx.marks:
                 # Perhaps print statement used as a function?
-                ctx.getMark(cst)
-            # Python keywords are treated as non-symbol text
-            ctx.line += NonSymbol(cst[1])
+                ctx.line += Symbol(cst[1], ctx.getMark(cst))
+            else:
+                # Python keywords are treated as non-symbol text
+                ctx.line += NonSymbol(cst[1])
         else:
             # Not a python keyword, symbol text
             if id(cst) in ctx.marks:

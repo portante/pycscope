@@ -605,6 +605,14 @@ class TestParseSource(unittest.TestCase):
                      " ' )",
                      ""])
 
+    def testStringsAsSymbolsOnInvalid(self,):
+        pycscope.strings_as_symbols = True
+        self.verify(["foo('ab c')"],
+                    ["1 ",
+                     "\t`foo",
+                     " ( 'ab c' )",
+                     ""])
+
     def testStringsAsSymbolsOnSimpleTriple(self,):
         pycscope.strings_as_symbols = True
         self.verify(["foo('''abc''')"],
@@ -1509,4 +1517,17 @@ class TestParseSource(unittest.TestCase):
                      '\tgc',
                      ' , ',
                      '\tgd',
+                     ''])
+
+    def testKeywordsAsSymbols(self,):
+        self.verify(['from __future__ import print_function',
+                     'def print(): return 0'],
+                    ['1 from ',
+                     '\t~__future__',
+                     ' import ',
+                     'print_function',
+                     '',
+                     '2 def ',
+                     '\t$print',
+                     ' ( ) : return 0',
                      ''])
