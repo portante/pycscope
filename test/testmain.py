@@ -74,9 +74,9 @@ class TestMain(unittest.TestCase):
         with open(os.path.join(self.tmpd, 'cscope.out'), 'r') as c:
             contents = c.read()
         # Expected index contents
-        eindexbuff = '\n\t@b.py\n\n1 \n\t=b\n = 2\n\n\n\t@a.py\n\n1 \n\t=a\n = "b"\n\n\n\t@'
+        eindexbuff = '\n\t@a.py\n\n1 \n\t=a\n = "b"\n\n\n\t@b.py\n\n1 \n\t=b\n = 2\n\n\n\t@'
         # Expected trailer contents
-        etrailerbuff = '\n1\n.\n0\n2\n10\nb.py\na.py\n'
+        etrailerbuff = '\n1\n.\n0\n2\n10\na.py\nb.py\n'
         # Resolve symlinks from the test environment path to mimic the normal
         # behavior.
         fpath = os.path.realpath(self.tmpd)
