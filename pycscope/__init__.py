@@ -595,7 +595,11 @@ def markTestlist(ctx, cst):
         ctx.tests[id(cst[i])] = cst[i]
 
 
-if sys.hexversion < 0x03000000:
+if sys.hexversion < 0x02070000:
+    tse = symbol.testlist
+    test_or_star_expr = (symbol.test,)
+    testlist_comp = (symbol.testlist_gexp, symbol.listmaker)
+elif sys.hexversion < 0x03000000:
     tse = symbol.testlist
     test_or_star_expr = (symbol.test,)
     testlist_comp = (symbol.testlist_comp, symbol.listmaker)
