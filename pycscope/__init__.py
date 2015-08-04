@@ -20,7 +20,7 @@ __usage__ = """Usage: pycscope.py [-D] [-R] [-S] [-V] [-f reffile] [-i srclistfi
 -f reffile      Use 'reffile' as cross-ref file name instead of 'cscope.out'
 -i srclistfile  Use the contents of 'srclistfile' as the list of source files to scan"""
 
-import getopt, sys, os, string, re
+import getopt, sys, os, re
 import keyword, parser, symbol, token
 
 
@@ -117,7 +117,8 @@ def main(argv=None):
         if o == "-f":
             indexfn = a
         if o == "-i":
-            args.extend(list(map(string.rstrip, open(a, 'r').readlines())))
+            with open(a) as f:
+                args.extend(x.rstrip() for x in f)
 
     # Search current dir by default
     if len(args) == 0:
