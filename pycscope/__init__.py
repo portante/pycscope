@@ -22,6 +22,7 @@ __usage__ = """Usage: pycscope.py [-D] [-R] [-S] [-V] [-f reffile] [-i srclistfi
 
 import getopt, sys, os, re
 import keyword, parser, symbol, token
+import tokenize
 
 
 class Mark(object):
@@ -176,7 +177,8 @@ def work(basepath, gen, debug):
             indexbuff_len = parseFile(basepath, fname, indexbuff, indexbuff_len, fnamesbuff, dump=debug)
         except (SyntaxError, AssertionError) as e:
             print("pycscope.py: %s: Line %s: %s" % (e.filename, e.lineno, e))
-            pass
+        except Exception as e:
+            print("pycscope.py: %s: %s" % (fname, e))
 
     return indexbuff, fnamesbuff
 
@@ -222,15 +224,9 @@ def parseFile(basepath, relpath, indexbuff, indexbuff_len, fnamesbuff, dump=Fals
     """
     # Open the file and get the contents
     fullpath = os.path.join(basepath, relpath)
-    try:
-        f = open(fullpath, 'rU')
-    except IOError as e:
-        # Can't open a file, emit message and ignore
-        print("pycscope.py: %s" % e)
-        return indexbuff_len
-    filecontents = f.read()
-    f.close()
-
+    bestopen = getattr(tokenize, 'open', open)
+    with bestopen(fullpath) as f:
+        filecontents = f.read()
     # Add the file mark to the index
     fnamesbuff.append(relpath)
     indexbuff.append("\n%s%s\n\n" % (Mark(Mark.FILE), relpath))
