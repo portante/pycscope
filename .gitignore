@@ -5,3 +5,4 @@ pycscope.files
 pycscope.out
 dist
 pycscope.egg-info
+*.pyc
