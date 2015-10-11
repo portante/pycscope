@@ -7,3 +7,4 @@ dist
 pycscope.egg-info
 .python-version
 *~
+*.pyc
