@@ -6,3 +6,4 @@ pycscope.out
 dist
 pycscope.egg-info
 .ropeproject/
+*.pyc
