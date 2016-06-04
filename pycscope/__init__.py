@@ -23,6 +23,19 @@ __usage__ = """Usage: pycscope.py [-D] [-R] [-S] [-V] [-f reffile] [-i srclistfi
 import getopt, sys, os, string, re
 import keyword, parser, symbol, token
 
+_re_ascii_filter = '[^%s]' % (re.escape(string.printable), )
+
+def ascii_dammit( sourcecode, _re_expr = re.compile( _re_ascii_filter ) ):
+    """
+        just ignore all non-ascii characters 
+        since any identifiers should be ASCII anyway ;
+        nb: this will work for utf-8 as well
+        
+    """
+
+    result = _re_expr.sub( '', sourcecode )
+    return result
+
 
 class Mark(object):
     """ Marks, as defined by Cscope, that are implemented.
@@ -238,6 +251,7 @@ def parseFile(basepath, relpath, indexbuff, indexbuff_len, fnamesbuff, dump=Fals
     # Add path info to any syntax errors in the source files
     if filecontents:
         try:
+            filecontents = ascii_dammit( filecontents )
             indexbuff_len = parseSource(filecontents, indexbuff, indexbuff_len, dump)
         except (SyntaxError, AssertionError) as e:
             e.filename = fullpath
