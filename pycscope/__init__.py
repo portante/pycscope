@@ -256,6 +256,11 @@ def parseFile(basepath, relpath, indexbuff, indexbuff_len, fnamesbuff, dump=Fals
         except (SyntaxError, AssertionError) as e:
             e.filename = fullpath
             raise e
+        except Exception as e:
+            # debug a fatal exception: 
+            e.filename = fullpath
+            print(  "pycscope.py: %s in %s" % ( e, repr(fullpath) )  )
+            raise e
 
     return indexbuff_len
 
