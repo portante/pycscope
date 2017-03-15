@@ -21,13 +21,13 @@ class TestParseFile(unittest.TestCase):
         self.maxDiff = None
 
     def testioerrors(self,):
-        cwd = os.getcwd()
+        cwd = os.path.dirname(__file__)
         fn = "_does_not_exist_.py"
-        l = pycscope.parseFile(cwd, fn, self.buf, 0, self.fnbuf)
-        self.assertEqual(l, 0)
+        with self.assertRaises(IOError):
+            pycscope.parseFile(cwd, fn, self.buf, 0, self.fnbuf)
 
     def testbadsyntax(self,):
-        cwd = os.getcwd()
+        cwd = os.path.dirname(__file__)
         fn = "badsyntax.py"
         try:
             l = pycscope.parseFile(cwd, fn, self.buf, 0, self.fnbuf)
