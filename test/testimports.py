@@ -21,7 +21,7 @@ class TestImports(unittest.TestCase):
         self.maxDiff = None
 
     def testimports(self,):
-        cwd = os.getcwd()
+        cwd = os.path.dirname(__file__)
         fn = "imports.py"
         l = pycscope.parseFile(cwd, fn, self.buf, 0, self.fnbuf)
         self.assertEqual(l, len(self.buf))

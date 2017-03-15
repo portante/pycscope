@@ -18,7 +18,7 @@ class TestIssues(unittest.TestCase):
         """ Make sure two newlines occur after a file mark
             when the source file starts with non-symbol text.
         """
-        cwd = os.getcwd()
+        cwd = os.path.dirname(__file__)
         fn = "issue0018.py"
         l = pycscope.parseFile(cwd, fn, self.buf, 0, self.fnbuf)
         self.assertEqual(l, len(self.buf))
