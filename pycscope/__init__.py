@@ -20,8 +20,9 @@ __usage__ = """Usage: pycscope.py [-D] [-R] [-S] [-V] [-f reffile] [-i srclistfi
 -f reffile      Use 'reffile' as cross-ref file name instead of 'cscope.out'
 -i srclistfile  Use the contents of 'srclistfile' as the list of source files to scan"""
 
-import getopt, sys, os, string, re
+import getopt, sys, os, re
 import keyword, parser, symbol, token
+import tokenize
 
 
 class Mark(object):
@@ -117,7 +118,8 @@ def main(argv=None):
         if o == "-f":
             indexfn = a
         if o == "-i":
-            args.extend(list(map(string.rstrip, open(a, 'r').readlines())))
+            with open(a) as f:
+                args.extend(x.rstrip() for x in f)
 
     # Search current dir by default
     if len(args) == 0:
@@ -148,7 +150,7 @@ def writeIndex(basepath, fout, indexbuff, fnamesbuff):
     """
     # Write the header and index
     index = ''.join(indexbuff)
-    index_len = len(index)
+    index_len = len(index.encode() if isinstance(u'' , str) else index)
     hdr_len = len(basepath) + 25
     fout.write("cscope 15 %s -c %010d" % (basepath, hdr_len + index_len))
     fout.write(index)
@@ -175,7 +177,8 @@ def work(basepath, gen, debug):
             indexbuff_len = parseFile(basepath, fname, indexbuff, indexbuff_len, fnamesbuff, dump=debug)
         except (SyntaxError, AssertionError) as e:
             print("pycscope.py: %s: Line %s: %s" % (e.filename, e.lineno, e))
-            pass
+        except Exception as e:
+            print("pycscope.py: %s: %s" % (fname, e))
 
     return indexbuff, fnamesbuff
 
@@ -221,15 +224,9 @@ def parseFile(basepath, relpath, indexbuff, indexbuff_len, fnamesbuff, dump=Fals
     """
     # Open the file and get the contents
     fullpath = os.path.join(basepath, relpath)
-    try:
-        f = open(fullpath, 'rU')
-    except IOError as e:
-        # Can't open a file, emit message and ignore
-        print("pycscope.py: %s" % e)
-        return indexbuff_len
-    filecontents = f.read()
-    f.close()
-
+    bestopen = getattr(tokenize, 'open', open)
+    with bestopen(fullpath) as f:
+        filecontents = f.read()
     # Add the file mark to the index
     fnamesbuff.append(relpath)
     indexbuff.append("\n%s%s\n\n" % (Mark(Mark.FILE), relpath))

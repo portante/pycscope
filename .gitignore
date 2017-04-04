@@ -5,3 +5,6 @@ pycscope.files
 pycscope.out
 dist
 pycscope.egg-info
+.ropeproject/
+*.pyc
+.ropeproject/

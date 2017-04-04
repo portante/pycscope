@@ -1,11 +1,12 @@
+```
 ========
 PyCscope
 ========
 
 :Copyright: Copyright 2013 Peter Portante.  See LICENSE for details.
 :Author: Peter Portante
-:Release: 1.2.1
-:Date: 2013/03/16
+:Release: 1.2.2
+:Date: 2017/03/30
 
 Purpose
 -------
@@ -96,11 +97,13 @@ by the `CscopeFinder` plugin for jEdit.  Other editors are not tested.
 Release Notes
 -------------
 
-This is PyCscope release 1.2.1
+This is PyCscope release 1.2.2
 
 ==========  ========= ======  ====================================================
 Date        Release   Trac    Changes
 ==========  ========= ======  ====================================================
+2017/03/30  1.2.2     N/A     Fix Travis tests for 2.6 other testing issues.
+----------  --------- ------  ----------------------------------------------------
 2013/03/16  1.2.1     N/A     Fix strings-as-symbols support (really).
 ----------  --------- ------  ----------------------------------------------------
 2013/03/16  1.2       N/A     Fix strings-as-symbols support; fix end of function
@@ -192,3 +195,4 @@ Date        Release   Trac    Changes
 
                        #6     Create project space.
 ==========  ========= ======  ====================================================
+```
