@@ -73,7 +73,7 @@ class TestMain(unittest.TestCase):
         assert expf == ret, "Expected %r, got %r" % (expf, ret)
         with open(os.path.join(self.tmpd, 'cscope.out'), 'r') as c:
             contents = c.read()
-        econtents = 'cscope 15 %s -c 0000000088\n\t@b.py\n\n1 \n\t=b\n = 2\n\n\n\t@a.py\n\n1 \n\t=a\n = "b"\n\n\n\t@\n1\n.\n0\n2\n10\nb.py\na.py\n' % self.tmpd
+        econtents = 'cscope 15 %s -c 0000000088\n\t@a.py\n\n1 \n\t=a\n = "b"\n\n\n\t@b.py\n\n1 \n\t=b\n = 2\n\n\n\t@\n1\n.\n0\n2\n10\na.py\nb.py\n' % self.tmpd
         assert econtents == contents, "Expected %r, got %r" % (econtents, contents)
 
     def testmaindashRdashS(self,):
@@ -92,5 +92,5 @@ class TestMain(unittest.TestCase):
         assert expf == ret, "Expected %r, got %r" % (expf, ret)
         with open(os.path.join(self.tmpd, 'cscope.out'), 'r') as c:
             contents = c.read()
-        econtents = 'cscope 15 %s -c 0000000116\n\t@./d/c.py\n\n1 \n\t=c\n = 3\n\n\n\t@./b.py\n\n1 \n\t=b\n = 2\n\n\n\t@./a.py\n\n1 \n\t=a\n = 1\n\n\n\t@\n1\n.\n0\n3\n23\n./d/c.py\n./b.py\n./a.py\n' % self.tmpd
+        econtents = 'cscope 15 %s -c 0000000116\n\t@./a.py\n\n1 \n\t=a\n = 1\n\n\n\t@./b.py\n\n1 \n\t=b\n = 2\n\n\n\t@./d/c.py\n\n1 \n\t=c\n = 3\n\n\n\t@\n1\n.\n0\n3\n23\n./a.py\n./b.py\n./d/c.py\n' % self.tmpd
         assert econtents == contents, "Expected %r, got %r" % (econtents, contents)

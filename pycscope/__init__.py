@@ -125,7 +125,7 @@ def main(argv=None):
 
     # Parse the given list of files/dirs
     basepath = os.getcwd()
-    gen = genFiles(basepath, args, recurse)
+    gen = sorted(genFiles(basepath, args, recurse))
 
     indexbuff, fnamesbuff = work(basepath, gen, debug)
 
