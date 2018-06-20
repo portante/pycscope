@@ -176,6 +176,9 @@ def work(basepath, gen, debug):
         except (SyntaxError, AssertionError) as e:
             print("pycscope.py: %s: Line %s: %s" % (e.filename, e.lineno, e))
             pass
+        except UnicodeDecodeError as e:
+            print("pycscope.py: %s: %s" % (e.filename, e))
+            pass
 
     return indexbuff, fnamesbuff
 
@@ -219,7 +222,7 @@ def parseFile(basepath, relpath, indexbuff, indexbuff_len, fnamesbuff, dump=Fals
     """Parses a source file and puts the resulting index into the buffer.
        Caller is required to provide synchronization.
     """
-    # Open the file and get the contents
+    # Open the file.
     fullpath = os.path.join(basepath, relpath)
     try:
         f = open(fullpath, 'rU')
@@ -227,8 +230,14 @@ def parseFile(basepath, relpath, indexbuff, indexbuff_len, fnamesbuff, dump=Fals
         # Can't open a file, emit message and ignore
         print("pycscope.py: %s" % e)
         return indexbuff_len
-    filecontents = f.read()
-    f.close()
+
+    # Get the contents.
+    with f:
+        try:
+            filecontents = f.read()
+        except UnicodeDecodeError as e:
+            e.filename = fullpath
+            raise e
 
     # Add the file mark to the index
     fnamesbuff.append(relpath)
