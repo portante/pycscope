@@ -35,6 +35,7 @@ class TestGenFiles(unittest.TestCase):
 
             # Actual test
             fs = list(pycscope.genFiles(tmpd, ['a.py', 'b', "s"], True))
-            self.assertEquals(fs, ['a.py', 's/t/f.py', 's/t/e.py', 's/d.py', 's/c.py'])
+            fs.sort()
+            self.assertEquals(fs, ['a.py', 's/c.py', 's/d.py', 's/t/e.py', 's/t/f.py'])
         finally:
             shutil.rmtree(tmpd)
