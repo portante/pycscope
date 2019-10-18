@@ -20,7 +20,7 @@ setup (
     author = "Peter Portante",
     author_email = "peter\x2Ea\x2Eportante\x40gmail\x2Ecom",
     description = "Generates a cscope index of Python source trees",
-    long_description = read('README.md'),
+    long_description = read('README.pypi'),
     license = "GPLv2",
     keywords = "pycscope cscope indexing",
     classifiers = [
