@@ -205,7 +205,7 @@ def parseDir(basepath, relpath, recurse):
         Caller is required to provide synchronization.
     """
     dirpath = os.path.join(basepath, relpath)
-    for name in os.listdir(dirpath):
+    for name in sorted(os.listdir(dirpath)):
         fullpath = os.path.join(dirpath, name)
         if os.path.isdir(fullpath) and recurse:
             for fname in parseDir(basepath, os.path.join(relpath, name), recurse):
