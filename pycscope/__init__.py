@@ -119,7 +119,7 @@ def main(argv=None):
         if o == "-f":
             indexfn = a
         if o == "-i":
-            args.extend(list(map(string.rstrip, open(a, 'r').readlines())))
+            args.extend(list(map(str.rstrip, open(a, 'r').readlines())))
         if o in ("-e", "--exclude"):
             # Exclude list should contain full path to each file or directory to
             # exclude relative to the current working directory.
