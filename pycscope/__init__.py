@@ -355,19 +355,19 @@ class Symbol(object):
 
     def __coerce__(self, other):
         """ We do not implement coercion; we define this routine so
-            that the interpretter won't invoke __getattr__() to try to
+            that the interpreter won't invoke __getattr__() to try to
             find it.
         """
         return NotImplemented
 
     def __nonzero__(self):
-        """ Defined so that the interpretter won't invoke
+        """ Defined so that the interpreter won't invoke
             __getattr__() to try to find it.
         """
         return True
 
     def __bool__(self):
-        """ Defined so that the interpretter won't invoke
+        """ Defined so that the interpreter won't invoke
             __getattr__() to try to find it (Python 3).
         """
         return True
@@ -504,7 +504,7 @@ class Line(object):
 
     def __coerce__(self, other):
         """ We do not implement coercion; we define this routine so
-            that the interpretter won't invoke __getattr___() to try to
+            that the interpreter won't invoke __getattr___() to try to
             find it.
         """
         return NotImplemented
@@ -557,7 +557,7 @@ class Context(object):
     def getMark(self, tup):
         ''' Get the mark associated with the given tuple. This is a one shot
             deal, as we delete the association from the dictionary to prevent
-            unnecessary accumlation of these associations given we never
+            unnecessary accumulation of these associations given we never
             rewalk the tree (one pass only).
         '''
         idx = id(tup)
@@ -567,7 +567,7 @@ class Context(object):
         return mark
 
     def commit(self, lineno=None):
-        ''' Commit a processed souce line to the buffer
+        ''' Commit a processed source line to the buffer
         '''
         line = str(self.line)
         if line:
