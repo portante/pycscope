@@ -328,8 +328,8 @@ class TestParseSource(unittest.TestCase):
     def verify(self, src, exp, dump=False):
         ''' Run the verification of a source value against an expected output
             value. The values are list of strings, each string representing an
-            individual line. An empty list is interpretted as an empty
-            file. And empty string is interpretted as an empty line.
+            individual line. An empty list is interpreted as an empty
+            file. And empty string is interpreted as an empty line.
         '''
         # We create one long string for both source and expected values so
         # that the caller can enumerate each line without adding new lines,
