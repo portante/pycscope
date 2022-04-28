@@ -157,7 +157,7 @@ def writeIndex(basepath, fout, indexbuff, fnamesbuff):
     """
     # Write the header and index
     index = ''.join(indexbuff)
-    index_len = len(index)
+    index_len = len(index.encode('utf-8'))
     hdr_len = len(basepath) + 25
     fout.write("cscope 15 %s -c %010d" % (basepath, hdr_len + index_len))
     fout.write(index)
