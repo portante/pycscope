@@ -23,7 +23,7 @@ __usage__ = """Usage: pycscope.py [-D] [-R] [-S] [-V] [-f reffile] [-e path1[,pa
 
 import getopt, sys, os, string, re
 import keyword, parser, symbol, token
-
+import tokenize
 
 class Mark(object):
     """ Marks, as defined by Cscope, that are implemented.
@@ -241,7 +241,7 @@ def parseFile(basepath, relpath, indexbuff, indexbuff_len, fnamesbuff, dump=Fals
     # Open the file.
     fullpath = os.path.join(basepath, relpath)
     try:
-        f = open(fullpath, 'rU')
+        f = tokenize.open(fullpath)
     except IOError as e:
         # Can't open a file, emit message and ignore
         print("pycscope.py: %s" % e)
